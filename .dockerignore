@@ -1,0 +1,8 @@
+# Keep image contexts lean and secret-free.
+node_modules
+dist
+.env
+.git
+coverage
+*.log
+.DS_Store

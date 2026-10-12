@@ -39,7 +39,8 @@ services:
 
   web:
     build:
-      context: ./apps/web
+      context: .
+      dockerfile: apps/web/Dockerfile
       # Default build target is the last stage (development = vite dev
       # on :5173). Production must serve the nginx stage on :80.
       target: production
