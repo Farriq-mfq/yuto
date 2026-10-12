@@ -1,4 +1,5 @@
 import { cn } from "cn";
+import { Badge } from "@/components/ui/badge";
 import { formatRupiah } from "../lib/format";
 import type { TxKind } from "../lib/queries";
 import { strings } from "../strings";
@@ -35,8 +36,8 @@ export function SignedAmount({
 /** Lencana kecil jenis transaksi (Keluar/Masuk). */
 export function KindBadge({ kind }: { kind: TxKind }) {
   return (
-    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+    <Badge variant="secondary">
       {kind === "income" ? strings.kindIncome : strings.kindExpense}
-    </span>
+    </Badge>
   );
 }
