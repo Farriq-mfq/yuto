@@ -5,6 +5,7 @@ import { authRoutes } from "./modules/auth/routes";
 import { SESSION_COOKIE, verifySessionToken } from "./modules/auth/service";
 import { accountRoutes } from "./modules/accounts/routes";
 import { categoryRoutes } from "./modules/categories/routes";
+import { transactionRoutes } from "./modules/transactions/routes";
 
 const PUBLIC_PATHS = ["/api/health", "/api/auth/login"];
 
@@ -43,7 +44,8 @@ export function createApp(env: Env = getEnv()) {
         .get("/health", () => ({ status: "ok" as const }))
         .use(authRoutes(env))
         .use(accountRoutes())
-        .use(categoryRoutes()),
+        .use(categoryRoutes())
+        .use(transactionRoutes()),
     );
 }
 
