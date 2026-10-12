@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
-import { PlusIcon, TrashIcon } from "@/icons";
+import { id as localeId } from "react-day-picker/locale";
+import { CalendarIcon, PlusIcon, TrashIcon } from "@/icons";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,9 +12,29 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { formatRupiah } from "../lib/format";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  combineLocalDateTime,
+  formatLocalDateId,
+  formatRupiah,
+  localDateFromDatePart,
+  splitLocalDateTime,
+} from "../lib/format";
 import { previewBalance } from "../lib/preview";
 import type { TxKind } from "../lib/queries";
 import { strings } from "../strings";
@@ -43,7 +64,7 @@ export interface TxFormInitial {
   categoryId: string;
   title: string;
   amount: number;
-  /** Nilai input `datetime-local` (`YYYY-MM-DDTHH:mm`). */
+  /** Waktu lokal `YYYY-MM-DDTHH:mm` (zona Asia/Jakarta). */
   occurredAtLocal: string;
   note: string;
   items: ItemValue[];
@@ -98,7 +119,7 @@ function parsePositiveInt(text: string): number {
 }
 
 /**
- * Nilai `datetime-local` valid bila tidak kosong dan bisa di-parse
+ * Nilai waktu lokal valid bila tidak kosong dan bisa di-parse
  * menjadi instant yang valid. `new Date("")` menghasilkan Invalid Date
  * yang melempar RangeError saat `.toISOString()` dipanggil.
  */
@@ -113,9 +134,6 @@ const CHIPS = [
   { label: strings.chip50k, value: 50_000 },
   { label: strings.chip100k, value: 100_000 },
 ];
-
-const selectClassName =
-  "min-h-[44px] w-full min-w-0 rounded-md border border-input bg-transparent px-2.5 text-base shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30";
 
 /**
  * Form catat/ubah transaksi (satu komponen untuk Record + Edit agar
@@ -141,6 +159,7 @@ export function TransactionForm({
   const [occurredAtLocal, setOccurredAtLocal] = useState(
     initial.occurredAtLocal,
   );
+  const [dateOpen, setDateOpen] = useState(false);
   const [note, setNote] = useState(initial.note);
   const [items, setItems] = useState<ItemDraft[]>(() =>
     initial.items.map((item, index) => ({
@@ -161,6 +180,24 @@ export function TransactionForm({
     () => categories.filter((category) => category.kind === kind),
     [categories, kind],
   );
+  // Label trigger di-render eksplisit dari data (bukan SelectValue):
+  // Base UI me-resolve label dari item yang ter-mount; saat popup
+  // tertutup (unmount) ia fallback ke raw value sehingga UUID tampil.
+  const selectedAccount = useMemo(
+    () => accounts.find((account) => account.id === accountId) ?? null,
+    [accounts, accountId],
+  );
+  const selectedCategory = useMemo(
+    () => categories.find((category) => category.id === categoryId) ?? null,
+    [categories, categoryId],
+  );
+
+  // Kontrol tanggal & jam terpisah berbagi satu string `occurredAtLocal`
+  // agar format, validasi, dan pratinjau tak berubah perilaku.
+  const { date: datePart, time: timePart } =
+    splitLocalDateTime(occurredAtLocal);
+  const selectedDate = localDateFromDatePart(datePart);
+  const dateButtonLabel = formatLocalDateId(datePart) ?? strings.datePickDate;
 
   function handleKindChange(next: TxKind) {
     setKind(next);
@@ -281,49 +318,48 @@ export function TransactionForm({
     <>
       <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <span id="kind-label" className="text-sm font-medium">
-            {strings.kindLabel}
-          </span>
-          <div
-            role="group"
-            aria-labelledby="kind-label"
-            className="flex gap-2"
+          <Tabs
+            value={kind}
+            onValueChange={(next) => handleKindChange(next as TxKind)}
           >
-            {(
-              [
-                { value: "expense", label: strings.kindExpense },
-                { value: "income", label: strings.kindIncome },
-              ] as const
-            ).map((option) => (
-              <Button
-                key={option.value}
-                type="button"
-                variant={kind === option.value ? "default" : "secondary"}
-                aria-pressed={kind === option.value}
-                onClick={() => handleKindChange(option.value)}
+            <TabsList aria-label={strings.kindLabel} className="h-auto w-full">
+              <TabsTrigger
+                value="expense"
                 className="min-h-[44px] flex-1"
               >
-                {option.label}
-              </Button>
-            ))}
-          </div>
+                {strings.kindExpense}
+              </TabsTrigger>
+              <TabsTrigger value="income" className="min-h-[44px] flex-1">
+                {strings.kindIncome}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="tx-account">{strings.accountLabel}</Label>
-          <select
-            id="tx-account"
-            value={accountId}
-            onChange={(event) => setAccountId(event.target.value)}
-            className={selectClassName}
+          <Select
+            value={accountId === "" ? null : accountId}
+            onValueChange={(next) => setAccountId(next ?? "")}
           >
-            <option value="">{strings.selectAccount}</option>
-            {accounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name} · {formatRupiah(account.balance)}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger id="tx-account" className="min-h-[44px] w-full">
+              {selectedAccount ? (
+                <span className="flex min-w-0 flex-1 truncate text-left">
+                  {selectedAccount.name} ·{" "}
+                  {formatRupiah(selectedAccount.balance)}
+                </span>
+              ) : (
+                <SelectValue placeholder={strings.selectAccount} />
+              )}
+            </SelectTrigger>
+            <SelectContent>
+              {accounts.map((account) => (
+                <SelectItem key={account.id} value={account.id}>
+                  {account.name} · {formatRupiah(account.balance)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           {accounts.length === 0 ? (
             <p className="text-sm text-muted-foreground">{strings.noAccounts}</p>
           ) : null}
@@ -331,19 +367,27 @@ export function TransactionForm({
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="tx-category">{strings.categoryLabel}</Label>
-          <select
-            id="tx-category"
-            value={categoryId}
-            onChange={(event) => setCategoryId(event.target.value)}
-            className={selectClassName}
+          <Select
+            value={categoryId === "" ? null : categoryId}
+            onValueChange={(next) => setCategoryId(next ?? "")}
           >
-            <option value="">{strings.selectCategory}</option>
-            {visibleCategories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger id="tx-category" className="min-h-[44px] w-full">
+              {selectedCategory ? (
+                <span className="flex min-w-0 flex-1 truncate text-left">
+                  {selectedCategory.name}
+                </span>
+              ) : (
+                <SelectValue placeholder={strings.selectCategory} />
+              )}
+            </SelectTrigger>
+            <SelectContent>
+              {visibleCategories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           {visibleCategories.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               {strings.noCategories}
@@ -398,14 +442,57 @@ export function TransactionForm({
         </div>
 
         <div className="flex flex-col gap-2">
-          <Label htmlFor="tx-date">{strings.dateLabel}</Label>
-          <Input
-            id="tx-date"
-            type="datetime-local"
-            value={occurredAtLocal}
-            onChange={(event) => setOccurredAtLocal(event.target.value)}
-            className="min-h-[44px]"
-          />
+          <div className="flex gap-2">
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <Label htmlFor="tx-date-button">
+                {strings.dateFieldLabel}
+              </Label>
+              <Popover open={dateOpen} onOpenChange={setDateOpen}>
+                <PopoverTrigger
+                  render={
+                    <Button
+                      id="tx-date-button"
+                      type="button"
+                      variant="outline"
+                      className="min-h-[44px] w-full justify-start font-normal"
+                    >
+                      <CalendarIcon size={20} aria-hidden="true" />
+                      <span className="truncate">{dateButtonLabel}</span>
+                    </Button>
+                  }
+                />
+                <PopoverContent align="start" className="w-auto p-2">
+                  <Calendar
+                    mode="single"
+                    locale={localeId}
+                    key={datePart}
+                    defaultMonth={selectedDate ?? new Date()}
+                    selected={selectedDate}
+                    onSelect={(next) => {
+                      if (!next) return;
+                      setOccurredAtLocal(
+                        combineLocalDateTime(next, timePart),
+                      );
+                      setDateOpen(false);
+                    }}
+                    className="[--cell-size:--spacing(11)]"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="flex w-32 shrink-0 flex-col gap-2">
+              <Label htmlFor="tx-time">{strings.timeLabel}</Label>
+              <Input
+                id="tx-time"
+                type="time"
+                value={timePart}
+                onChange={(event) =>
+                  setOccurredAtLocal(`${datePart}T${event.target.value}`)
+                }
+                className="min-h-[44px] tabular-nums"
+              />
+            </div>
+          </div>
           {dateError ? (
             <p role="alert" className="text-sm font-medium text-destructive">
               {dateError}

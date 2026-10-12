@@ -5,9 +5,6 @@ export type ThemePreference = "system" | "light" | "dark";
 
 export const THEME_STORAGE_KEY = "yuto-theme";
 
-/** Urutan siklus tombol toggle: system → light → dark → system. */
-const CYCLE_ORDER: readonly ThemePreference[] = ["system", "light", "dark"];
-
 function isThemePreference(value: unknown): value is ThemePreference {
   return value === "system" || value === "light" || value === "dark";
 }
@@ -50,19 +47,12 @@ export function persistThemePreference(preference: ThemePreference): void {
   applyThemePreference(preference);
 }
 
-export function nextThemePreference(
-  current: ThemePreference,
-): ThemePreference {
-  const index = CYCLE_ORDER.indexOf(current);
-  return CYCLE_ORDER[(index + 1) % CYCLE_ORDER.length] ?? "system";
-}
-
 /**
- * State tema untuk tombol toggle: preferensi aktif, apakah gelap
- * ter-resolve saat ini, dan aksi siklus ke preferensi berikutnya.
+ * State tema untuk menu pilihan: preferensi aktif, apakah gelap
+ * ter-resolve saat ini, dan aksi pilih preferensi langsung.
  */
 export function useTheme() {
-  const [preference, setPreference] =
+  const [preference, setPreferenceState] =
     useState<ThemePreference>(readThemePreference);
   const [isDark, setIsDark] = useState<boolean>(() =>
     resolveDark(readThemePreference()),
@@ -73,7 +63,7 @@ export function useTheme() {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const syncFromOs = () => {
       const current = readThemePreference();
-      setPreference(current);
+      setPreferenceState(current);
       setIsDark(resolveDark(current));
     };
     const onStorage = (event: StorageEvent) => {
@@ -87,14 +77,11 @@ export function useTheme() {
     };
   }, []);
 
-  const cycle = useCallback(() => {
-    setPreference((current) => {
-      const next = nextThemePreference(current);
-      persistThemePreference(next);
-      setIsDark(resolveDark(next));
-      return next;
-    });
+  const setPreference = useCallback((next: ThemePreference) => {
+    persistThemePreference(next);
+    setPreferenceState(next);
+    setIsDark(resolveDark(next));
   }, []);
 
-  return { preference, isDark, cycle };
+  return { preference, isDark, setPreference };
 }

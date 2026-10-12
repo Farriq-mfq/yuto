@@ -12,6 +12,7 @@ export const strings = {
   loginFailed: "Tidak bisa masuk. Periksa koneksi lalu coba lagi.",
   homeTitle: "Beranda",
   monthLabel: "Bulan",
+  filterLabel: "Filter transaksi",
   filterAll: "Semua",
   filterExpense: "Keluar",
   filterIncome: "Masuk",
@@ -42,6 +43,9 @@ export const strings = {
   categoryLabel: "Kategori",
   noteLabel: "Catatan",
   dateLabel: "Waktu",
+  dateFieldLabel: "Tanggal",
+  timeLabel: "Jam",
+  datePickDate: "Pilih tanggal",
   dateInvalid: "Isi waktu transaksi dengan tanggal dan jam yang valid.",
   itemsLabel: "Rincian",
   locationLabel: "Lokasi",
@@ -83,9 +87,10 @@ export const strings = {
   navActivity: "Aktivitas",
   navReports: "Laporan",
   comingSoon: "Segera hadir di fase berikutnya.",
-  themeToggleSystem: "Tema: mengikuti sistem",
-  themeToggleLight: "Tema: terang",
-  themeToggleDark: "Tema: gelap",
+  themeMenuLabel: "Tema",
+  themeSystem: "Sistem",
+  themeLight: "Terang",
+  themeDark: "Gelap",
 } as const;
 
 export type Strings = typeof strings;
