@@ -47,7 +47,7 @@ export default function Wallet() {
     hidden ? strings.balanceHidden : formatRupiah(amount);
 
   return (
-    <main className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6">
+    <main className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5">
       <div className="flex items-center justify-between gap-3">
         <h1 className="font-display text-xl font-bold">{strings.walletTitle}</h1>
         <Button
@@ -72,7 +72,7 @@ export default function Wallet() {
         <div
           aria-busy="true"
           aria-label={strings.loading}
-          className="mt-4 flex flex-col gap-2"
+          className="mt-5 flex flex-col gap-3"
         >
           <Skeleton className="h-28 rounded-2xl" />
           <Skeleton className="h-12 rounded-xl" />
@@ -80,7 +80,7 @@ export default function Wallet() {
           <Skeleton className="h-16 rounded-xl" />
         </div>
       ) : summary.isError ? (
-        <Card className="mt-4">
+        <Card className="mt-5">
           <CardContent className="items-center p-6 text-center">
             <p className="text-sm text-muted-foreground">{strings.loadError}</p>
             <Button
@@ -96,7 +96,7 @@ export default function Wallet() {
         <>
           {/* Label "Total saldo" sengaja berbeda dari "Net bulan ini"
               di Home (PRD acceptance 5). */}
-          <Card className="mt-4" aria-label={strings.totalBalance}>
+          <Card className="mt-5" aria-label={strings.totalBalance}>
             <CardContent>
               <p className="text-sm text-muted-foreground">
                 {strings.totalBalance}
@@ -110,7 +110,7 @@ export default function Wallet() {
             </CardContent>
           </Card>
 
-          <div className="mt-4 flex gap-2">
+          <div className="mt-5 flex gap-3">
             <Link
               to="/transfer"
               className={cn(buttonVariants(), "min-h-[44px] flex-1")}
@@ -131,7 +131,7 @@ export default function Wallet() {
           </div>
 
           {summary.data.accounts.length === 0 ? (
-            <Card className="mt-4">
+            <Card className="mt-5">
               <CardContent className="items-center p-8 text-center">
                 <span
                   aria-hidden="true"
@@ -155,13 +155,13 @@ export default function Wallet() {
               </CardContent>
             </Card>
           ) : (
-            <Card className="mt-4">
+            <Card className="mt-5">
               <CardContent className="gap-0 p-0">
                 {summary.data.accounts.map((account, index) => (
                   <Link
                     key={account.id}
                     to={`/wallet/${account.id}`}
-                    className={`flex min-h-[56px] items-center gap-3 px-4 py-2 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
+                    className={`flex min-h-[56px] items-center gap-4 px-5 py-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
                       index > 0 ? "border-t border-border" : ""
                     }`}
                   >

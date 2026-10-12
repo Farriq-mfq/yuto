@@ -135,14 +135,14 @@ export default function AccountEdit() {
     (errorStatus(account.error) === 404 || (!account.isError && !account.data));
 
   return (
-    <main className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6">
+    <main className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5">
       <Link
         to="/wallet"
         className="inline-flex min-h-[44px] items-center text-sm font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         ← {strings.backToWallet}
       </Link>
-      <h1 className="mt-1 font-display text-xl font-bold">
+      <h1 className="mt-2 font-display text-xl font-bold">
         {strings.editAccountTitle}
       </h1>
 
@@ -150,7 +150,7 @@ export default function AccountEdit() {
         <div
           aria-busy="true"
           aria-label={strings.loading}
-          className="mt-4 flex flex-col gap-2"
+          className="mt-5 flex flex-col gap-3"
         >
           <Skeleton className="h-12 rounded-xl" />
           <Skeleton className="h-12 rounded-xl" />
@@ -158,7 +158,7 @@ export default function AccountEdit() {
           <Skeleton className="h-24 rounded-xl" />
         </div>
       ) : gone ? (
-        <Card className="mt-4">
+        <Card className="mt-5">
           <CardContent className="items-center p-8 text-center">
             <p className="text-base font-semibold">{strings.accountNotFound}</p>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -173,7 +173,7 @@ export default function AccountEdit() {
           </CardContent>
         </Card>
       ) : account.isError ? (
-        <Card className="mt-4">
+        <Card className="mt-5">
           <CardContent className="items-center p-6 text-center">
             <p className="text-sm text-muted-foreground">{strings.loadError}</p>
             <Button
@@ -194,7 +194,7 @@ export default function AccountEdit() {
             {balance !== undefined ? (
               <p
                 aria-live="polite"
-                className="mt-4 rounded-xl bg-muted px-3 py-2 text-sm tabular-nums"
+                className="mt-5 rounded-xl bg-muted px-4 py-3 text-sm tabular-nums"
               >
                 {strings.currentBalance}:{" "}
                 {hidden ? strings.balanceHidden : formatRupiah(balance)}
@@ -209,22 +209,24 @@ export default function AccountEdit() {
               onCancel={() => navigate("/wallet")}
             />
 
-            {deleteError ? (
-              <p
-                role="alert"
-                className="text-sm font-medium text-destructive"
+            <div className="mt-5 flex flex-col gap-3">
+              {deleteError ? (
+                <p
+                  role="alert"
+                  className="text-sm font-medium text-destructive"
+                >
+                  {deleteError}
+                </p>
+              ) : null}
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => setConfirmDelete(true)}
+                className="min-h-[44px] w-full"
               >
-                {deleteError}
-              </p>
-            ) : null}
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => setConfirmDelete(true)}
-              className="min-h-[44px] w-full"
-            >
-              {strings.deleteButton}
-            </Button>
+                {strings.deleteButton}
+              </Button>
+            </div>
 
             <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
               <AlertDialogContent size="sm">

@@ -81,7 +81,7 @@ export function AccountForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
+    <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-5">
       <div className="flex flex-col gap-2">
         <Tabs value={type} onValueChange={(next) => setType(next as AccountType)}>
           <TabsList aria-label={strings.accountTypeLabel} className="h-auto w-full">
@@ -155,7 +155,7 @@ export function AccountForm({
         onChange={setInitialBalance}
       />
 
-      <div className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-2">
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-border px-4 py-3">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <Label htmlFor="account-show-category">
             {strings.showCategoryLabel}
@@ -178,7 +178,7 @@ export function AccountForm({
         </p>
       ) : null}
 
-      <div className="flex gap-2 pb-2">
+      <div className="flex gap-3 pb-2">
         <Button
           type="button"
           variant="outline"

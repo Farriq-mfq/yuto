@@ -142,14 +142,14 @@ export default function Transfer() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6">
+    <main className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5">
       <Link
         to="/wallet"
         className="inline-flex min-h-[44px] items-center text-sm font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         ← {strings.backToWallet}
       </Link>
-      <h1 className="mt-1 font-display text-xl font-bold">
+      <h1 className="mt-2 font-display text-xl font-bold">
         {strings.transferTitle}
       </h1>
 
@@ -157,7 +157,7 @@ export default function Transfer() {
         <div
           aria-busy="true"
           aria-label={strings.loading}
-          className="mt-4 flex flex-col gap-2"
+          className="mt-5 flex flex-col gap-3"
         >
           <Skeleton className="h-12 rounded-xl" />
           <Skeleton className="h-12 rounded-xl" />
@@ -165,7 +165,7 @@ export default function Transfer() {
           <Skeleton className="h-24 rounded-xl" />
         </div>
       ) : summary.isError ? (
-        <Card className="mt-4">
+        <Card className="mt-5">
           <CardContent className="items-center p-6 text-center">
             <p className="text-sm text-muted-foreground">{strings.loadError}</p>
             <Button
@@ -178,7 +178,7 @@ export default function Transfer() {
           </CardContent>
         </Card>
       ) : (
-        <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-5">
           <div className="flex flex-col gap-2">
             <Label htmlFor="transfer-from">{strings.fromLabel}</Label>
             <Select
@@ -255,7 +255,7 @@ export default function Transfer() {
           {fromPreview || toPreview ? (
             <div
               aria-live="polite"
-              className="flex flex-col gap-1 rounded-xl bg-muted px-3 py-2 text-sm tabular-nums"
+              className="flex flex-col gap-2 rounded-xl bg-muted px-4 py-3 text-sm tabular-nums"
             >
               {fromPreview && fromAccount ? (
                 <p>
@@ -280,7 +280,7 @@ export default function Transfer() {
             </p>
           ) : null}
 
-          <div className="flex gap-2 pb-2">
+          <div className="flex gap-3 pb-2">
             <Button
               type="button"
               variant="outline"
@@ -308,13 +308,13 @@ export default function Transfer() {
           <div
             aria-busy="true"
             aria-label={strings.loading}
-            className="mt-2 flex flex-col gap-2"
+            className="mt-3 flex flex-col gap-3"
           >
             <Skeleton className="h-16 rounded-xl" />
             <Skeleton className="h-16 rounded-xl" />
           </div>
         ) : history.isError ? (
-          <Card className="mt-2">
+          <Card className="mt-3">
             <CardContent className="items-center p-6 text-center">
               <p className="text-sm text-muted-foreground">
                 {strings.loadError}
@@ -329,7 +329,7 @@ export default function Transfer() {
             </CardContent>
           </Card>
         ) : (history.data ?? []).length === 0 ? (
-          <Card className="mt-2">
+          <Card className="mt-3">
             <CardContent className="items-center p-8 text-center">
               <span
                 aria-hidden="true"
@@ -346,12 +346,12 @@ export default function Transfer() {
             </CardContent>
           </Card>
         ) : (
-          <Card className="mt-2">
+          <Card className="mt-3">
             <CardContent className="gap-0 p-0">
               {(history.data ?? []).map((item, index) => (
                 <div
                   key={item.id}
-                  className={`flex min-h-[56px] items-center gap-3 px-4 py-2 ${
+                  className={`flex min-h-[56px] items-center gap-4 px-5 py-3 ${
                     index > 0 ? "border-t border-border" : ""
                   }`}
                 >

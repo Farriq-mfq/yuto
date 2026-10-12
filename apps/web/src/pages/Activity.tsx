@@ -88,11 +88,11 @@ export default function Activity() {
   const heading = selectedDate ? formatDayJakarta(selectedDate) : selected;
 
   return (
-    <main className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6">
+    <main className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5">
       <h1 className="font-display text-xl font-bold">{strings.activityTitle}</h1>
 
-      <Card className="mt-4">
-        <CardContent className="flex justify-center p-2">
+      <Card className="mt-5">
+        <CardContent className="flex justify-center p-4 sm:p-5">
           <Calendar
             mode="single"
             locale={localeId}
@@ -107,21 +107,21 @@ export default function Activity() {
         </CardContent>
       </Card>
 
-      <section aria-label={heading} aria-live="polite" className="mt-4">
+      <section aria-label={heading} aria-live="polite" className="mt-6">
         <h2 className="px-1 text-sm font-semibold">{heading}</h2>
 
         {day.isPending ? (
           <div
             aria-busy="true"
             aria-label={strings.loading}
-            className="mt-2 flex flex-col gap-2"
+            className="mt-3 flex flex-col gap-3"
           >
             <Skeleton className="h-20 rounded-2xl" />
             <Skeleton className="h-16 rounded-xl" />
             <Skeleton className="h-16 rounded-xl" />
           </div>
         ) : day.isError ? (
-          <Card className="mt-2">
+          <Card className="mt-3">
             <CardContent className="items-center p-6 text-center">
               <p className="text-sm text-muted-foreground">
                 {strings.loadError}
@@ -136,7 +136,7 @@ export default function Activity() {
             </CardContent>
           </Card>
         ) : (day.data ?? []).length === 0 ? (
-          <Card className="mt-2">
+          <Card className="mt-3">
             <CardContent className="items-center p-8 text-center">
               <span
                 aria-hidden="true"
@@ -151,7 +151,7 @@ export default function Activity() {
           </Card>
         ) : (
           <>
-            <Card className="mt-2" aria-label={strings.activityNet}>
+            <Card className="mt-3" aria-label={strings.activityNet}>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
                   {strings.activityNet}
@@ -159,7 +159,7 @@ export default function Activity() {
                 <p className="mt-1 text-2xl font-bold tabular-nums">
                   {formatRupiah(totals.net)}
                 </p>
-                <div className="mt-2 flex gap-4 text-sm tabular-nums">
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm tabular-nums">
                   <p>
                     <span className="text-muted-foreground">
                       {strings.monthIncome}:{" "}
@@ -180,13 +180,13 @@ export default function Activity() {
               </CardContent>
             </Card>
 
-            <Card className="mt-4">
+            <Card className="mt-5">
               <CardContent className="gap-0 p-0">
                 {(day.data ?? []).map((row, index) => (
                   <Link
                     key={row.id}
                     to={`/transactions/${row.id}`}
-                    className={`flex min-h-[56px] items-center gap-3 px-4 py-2 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
+                    className={`flex min-h-[56px] items-center gap-4 px-5 py-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
                       index > 0 ? "border-t border-border" : ""
                     }`}
                   >

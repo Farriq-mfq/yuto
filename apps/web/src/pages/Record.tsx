@@ -93,14 +93,14 @@ export default function Record() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6">
+    <main className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5">
       <h1 className="font-display text-xl font-bold">{strings.recordTitle}</h1>
 
       {summary.isPending || categories.isPending ? (
         <div
           aria-busy="true"
           aria-label={strings.loading}
-          className="mt-4 flex flex-col gap-2"
+          className="mt-5 flex flex-col gap-3"
         >
           <Skeleton className="h-12 rounded-xl" />
           <Skeleton className="h-12 rounded-xl" />
@@ -108,7 +108,7 @@ export default function Record() {
           <Skeleton className="h-24 rounded-xl" />
         </div>
       ) : summary.isError || categories.isError ? (
-        <Card className="mt-4">
+        <Card className="mt-5">
           <CardContent className="items-center p-6 text-center">
             <p className="text-sm text-muted-foreground">{strings.loadError}</p>
             <Button
