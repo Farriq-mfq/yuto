@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bun install)",
+      "Bash(bun run:*)",
+      "Bash(bun test:*)",
+      "Bash(bunx drizzle-kit:*)",
+      "Bash(docker compose:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Bash(rm -rf:*)",
+      "Bash(git push:*)",
+      "Bash(docker compose down -v:*)"
+    ]
+  }
+}

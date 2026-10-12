@@ -1,0 +1,41 @@
+# Development override: same stack as docker-compose.yml but with live reload.
+#
+#   bun run dev:docker       # api :3000 (bun --watch) + web :5173 (vite HMR)
+#   bun run dev:docker:down  # stop and remove dev containers
+#
+# `db` is inherited unchanged from docker-compose.yml. Local `bun run dev`
+# is unaffected by this file.
+services:
+  api:
+    build:
+      context: ./apps/api
+      target: development
+    # Replaces the prod migrate+seed+serve command. Run migrations once with:
+    #   docker compose -f docker-compose.yml -f docker-compose.dev.yml exec api bunx drizzle-kit migrate
+    command: ["bun", "--watch", "src/index.ts"]
+    volumes:
+      - ./apps/api:/app
+      - /app/node_modules # anonymous volume: keep image-installed deps
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    # depends_on db (healthy) is inherited from docker-compose.yml.
+
+  web:
+    build:
+      context: ./apps/web
+      target: development
+    command: ["bun", "run", "dev", "--host", "--port", "5173"]
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules # anonymous volume: keep image-installed deps
+    # NOTE: the base file also publishes 8080:80 and compose unions ports, so
+    # that mapping still shows in `config` output. Nothing listens on :80 in dev.
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_PROXY_TARGET: http://api:3000
+      VITE_WATCH_POLLING: "1"
+    depends_on:
+      - api

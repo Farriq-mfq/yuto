@@ -1,0 +1,11 @@
+# Security rules
+- Never read, print, or commit `.env`. Only `.env.example` is committed.
+- Never log the password or tokens. Never commit them.
+- Auth token: JWT in an httpOnly, SameSite=Lax cookie; `Secure` in production.
+- Single owner, no users table. Every new route is behind the session guard; add a test that it returns 401 without a cookie.
+- Validate all input at the API boundary. Never build SQL from strings.
+- Do not add a dependency without checking it is maintained and needed.
+- Self-host: no telemetry, no analytics, no outbound calls by default. A new outbound call needs an opt-in env setting and a line in `docs/TRD.md`.
+- There is no registration. The only credential is `YUTO_PASSWORD` from `.env`, compared with `timingSafeEqual`.
+- `/auth/login` is rate limited. The API refuses to start with a missing or weak `JWT_SECRET` or `YUTO_PASSWORD`.
+- Never ship a default password or secret that works.
