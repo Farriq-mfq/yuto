@@ -42,6 +42,8 @@ jobs:
         run: bunx tsc --noEmit -p apps/api
       - name: Migrate test database
         run: bun run --cwd apps/api db:migrate
+      - name: Seed test database
+        run: bun run --cwd apps/api db:seed
       - name: Tests
         run: bun test
       - name: Build web (also type-checks it)

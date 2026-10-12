@@ -165,3 +165,23 @@ export function localDateFromDatePart(datePart: string): Date | undefined {
 export function combineLocalDateTime(date: Date, time: string): string {
   return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${time}`;
 }
+
+const groupedId = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 });
+
+/** Tampilkan integer rupiah dengan pemisah ribuan (`250.000`). */
+export function formatGrouped(amount: number): string {
+  return groupedId.format(Math.round(amount));
+}
+
+/** Ambil digit saja, maksimal 15 digit agar aman sebagai integer. */
+export function digitsOnly(value: string): string {
+  return value.replace(/[^0-9]/g, "").slice(0, 15);
+}
+
+/** Parse teks input menjadi integer rupiah (>= 0). */
+export function parsePositiveInt(text: string): number {
+  const digits = text.replace(/[^0-9]/g, "");
+  if (digits === "") return 0;
+  const parsed = Number.parseInt(digits, 10);
+  return Number.isSafeInteger(parsed) ? parsed : 0;
+}

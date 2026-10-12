@@ -1,4 +1,4 @@
-FROM oven/bun:1 AS base
+FROM oven/bun:1 AS production
 WORKDIR /app
 
 COPY package.json bun.lock* ./
@@ -15,5 +15,5 @@ CMD ["bun", "src/index.ts"]
 
 # Development stage (docker-compose.dev.yml): auto-reload via `bun --watch`.
 # Source is mounted from ./apps/api at runtime, overlaying the COPY above.
-FROM base AS development
+FROM production AS development
 CMD ["bun", "--watch", "src/index.ts"]

@@ -9,11 +9,16 @@ import { Shell } from "./App";
 import "./index.css";
 import { applyThemePreference, THEME_STORAGE_KEY } from "./lib/theme";
 import Home from "./pages/Home";
+import Activity from "./pages/Activity";
 import Login from "./pages/Login";
+import AccountEdit from "./pages/AccountEdit";
+import AccountNew from "./pages/AccountNew";
 import Placeholder from "./pages/Placeholder";
 import Record from "./pages/Record";
 import TransactionDetail from "./pages/TransactionDetail";
 import TransactionEdit from "./pages/TransactionEdit";
+import Transfer from "./pages/Transfer";
+import Wallet from "./pages/Wallet";
 import { strings } from "./strings";
 
 const queryClient = new QueryClient();
@@ -41,20 +46,17 @@ createRoot(root).render(
           <Route path="/login" element={<Login />} />
           <Route element={<Shell />}>
             <Route index element={<Home />} />
-            <Route
-              path="/wallet"
-              element={<Placeholder title={strings.navWallet} />}
-            />
+            <Route path="/wallet" element={<Wallet />} />
+            <Route path="/wallet/new" element={<AccountNew />} />
+            <Route path="/wallet/:id" element={<AccountEdit />} />
+            <Route path="/transfer" element={<Transfer />} />
             <Route path="/record" element={<Record />} />
             <Route path="/transactions/:id" element={<TransactionDetail />} />
             <Route
               path="/transactions/:id/edit"
               element={<TransactionEdit />}
             />
-            <Route
-              path="/activity"
-              element={<Placeholder title={strings.navActivity} />}
-            />
+            <Route path="/activity" element={<Activity />} />
             <Route
               path="/reports"
               element={<Placeholder title={strings.navReports} />}
