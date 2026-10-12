@@ -103,21 +103,6 @@ const MONTH_SHORT_ID = [
   "Des",
 ] as const;
 
-const MONTH_LONG_ID = [
-  "Januari",
-  "Februari",
-  "Maret",
-  "April",
-  "Mei",
-  "Juni",
-  "Juli",
-  "Agustus",
-  "September",
-  "Oktober",
-  "November",
-  "Desember",
-] as const;
-
 function pad2(value: number): string {
   return String(value).padStart(2, "0");
 }
@@ -152,18 +137,6 @@ export function formatLocalDateId(datePart: string): string | null {
 }
 
 /**
- * Label bulan Indonesia dari kunci `YYYY-MM`, mis. "Oktober 2026".
- * Murni dari string (tanpa `new Date`) agar tak ada geser zona waktu.
- */
-export function formatMonthId(month: string): string | null {
-  const match = /^(\d{4})-(\d{2})$/.exec(month);
-  if (!match) return null;
-  const name = MONTH_LONG_ID[Number(match[2]) - 1];
-  if (!name) return null;
-  return `${name} ${match[1]}`;
-}
-
-/**
  * Potongan `YYYY-MM-DD` menjadi Date lokal tengah malam untuk Calendar.
  * Konstruktor lokal dipakai (bukan parse ISO) agar hari tak bergeser zona.
  * Tanggal tak nyata (mis. 2026-02-30) → undefined.
@@ -185,24 +158,10 @@ export function localDateFromDatePart(datePart: string): Date | undefined {
   return date;
 }
 
-/** Date lokal menjadi kunci bulan `YYYY-MM` dari potongan kalender lokal. */
-export function monthKeyFromDate(date: Date): string {
-  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}`;
-}
-
 /**
  * Gabung hari pilihan Calendar + jam (`HH:mm`) menjadi `YYYY-MM-DDTHH:mm`
  * dengan format yang sama persis seperti helper existing.
  */
 export function combineLocalDateTime(date: Date, time: string): string {
   return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${time}`;
-}
-
-/** Kunci `YYYY-MM` menjadi hari pertama bulan itu (defaultMonth Calendar). */
-export function firstDateOfMonthKey(month: string): Date | undefined {
-  const match = /^(\d{4})-(\d{2})$/.exec(month);
-  if (!match) return undefined;
-  const monthIndex = Number(match[2]) - 1;
-  if (monthIndex < 0 || monthIndex > 11) return undefined;
-  return new Date(Number(match[1]), monthIndex, 1);
 }
