@@ -18,10 +18,10 @@ Order matters: each phase ends in something that runs and has tests.
 - Done when: the owner can log in and see an empty Home, styled with the Yuto design system.
 
 ## Phase 2: Core
-- [ ] Accounts: create, list with balance, edit, delete (blocked rule).
-- [ ] Transactions: create, edit, delete, list by month/kind, items, balance preview.
-- [ ] Home screen: month summary, grouped list, filter.
-- [ ] Tests: balance after create/edit/delete, unauthenticated requests get 401, category kept on edit.
+- [x] Accounts: create, list with balance, edit, delete (blocked rule).
+- [x] Transactions: create, edit, delete, list by month/kind, items, balance preview.
+- [x] Home screen: month summary, grouped list, filter.
+- [x] Tests: balance after create/edit/delete, unauthenticated requests get 401, category kept on edit.
 
 ## Phase 3: Complete the app
 - [ ] Transfers (atomic) + tests for rollback.
