@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isUnauthorized } from "../lib/api";
 import {
+  currentMonthJakarta,
   dayKeyJakarta,
   formatDayJakarta,
   formatRupiah,
@@ -24,11 +25,6 @@ import { strings } from "../strings";
 
 function monthKeyOfDay(day: string): string {
   return day.slice(0, 7);
-}
-
-function monthKeyOfDate(date: Date): string {
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  return `${date.getFullYear()}-${month}`;
 }
 
 /**
@@ -101,7 +97,7 @@ export default function Activity() {
             mode="single"
             locale={localeId}
             month={monthDate}
-            onMonthChange={(next) => setMonth(monthKeyOfDate(next))}
+            onMonthChange={(next) => setMonth(currentMonthJakarta(next))}
             selected={selectedDate}
             onSelect={handleSelect}
             modifiers={{ hasTx: markedDays }}
