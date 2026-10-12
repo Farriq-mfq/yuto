@@ -24,10 +24,10 @@ Order matters: each phase ends in something that runs and has tests.
 - [x] Tests: balance after create/edit/delete, unauthenticated requests get 401, category kept on edit.
 
 ## Phase 3: Complete the app
-- [ ] Transfers (atomic) + tests for rollback.
-- [ ] Activity calendar and empty state.
-- [ ] Location picker (map pin), saved on transaction.
-- [ ] Hide balance toggle.
+- [x] Transfers (atomic) + tests for rollback.
+- [x] Activity calendar and empty state.
+- [x] Location picker (map pin), saved on transaction.
+- [x] Hide balance toggle.
 
 ## Phase 4: Reports
 - [ ] `/reports/summary` and `/reports/categories` with percent and change vs last month.

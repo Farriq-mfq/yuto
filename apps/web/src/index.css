@@ -129,3 +129,21 @@
     overflow-x: clip;
     }
 }
+
+/* Activity: titik di bawah angka hari yang punya transaksi. */
+.activity-has-tx {
+  position: relative;
+  font-weight: 700;
+}
+.activity-has-tx::after {
+  content: "";
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  transform: translateX(-50%);
+  border-radius: 9999px;
+  background-color: currentColor;
+  pointer-events: none;
+}

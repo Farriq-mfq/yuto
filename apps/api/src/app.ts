@@ -6,8 +6,9 @@ import { SESSION_COOKIE, verifySessionToken } from "./modules/auth/service";
 import { accountRoutes } from "./modules/accounts/routes";
 import { categoryRoutes } from "./modules/categories/routes";
 import { transactionRoutes } from "./modules/transactions/routes";
+import { transferRoutes } from "./modules/transfers/routes";
 
-const PUBLIC_PATHS = ["/api/health", "/api/auth/login"];
+const PUBLIC_PATHS = ["/api/health", "/api/auth/login", "/api/config"];
 
 export function createApp(env: Env = getEnv()) {
   return new Elysia()
@@ -42,10 +43,13 @@ export function createApp(env: Env = getEnv()) {
     .group("/api", (group) =>
       group
         .get("/health", () => ({ status: "ok" as const }))
+        // Public on purpose: a boolean UI switch, not a secret.
+        .get("/config", () => ({ mapEnabled: env.mapEnabled }))
         .use(authRoutes(env))
         .use(accountRoutes())
         .use(categoryRoutes())
-        .use(transactionRoutes()),
+        .use(transactionRoutes())
+        .use(transferRoutes()),
     );
 }
 

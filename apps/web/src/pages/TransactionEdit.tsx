@@ -51,6 +51,9 @@ export default function TransactionEdit() {
       amount: tx.data.amount,
       occurredAtLocal: toDateTimeLocalJakarta(tx.data.occurredAt),
       note: tx.data.note ?? "",
+      latitude: tx.data.latitude ?? null,
+      longitude: tx.data.longitude ?? null,
+      locationName: tx.data.locationName ?? "",
       items: tx.data.items.map((item) => ({
         name: item.name,
         quantity: item.quantity,
@@ -88,6 +91,17 @@ export default function TransactionEdit() {
         : {}),
       ...((values.note || "") !== (original.note ?? "")
         ? { note: values.note }
+        : {}),
+      // Lokasi: kirim hanya field yang berubah (tanpa address terpisah).
+      // Toggle mati = nilai form null = lokasi server dibiarkan apa adanya.
+      ...((values.latitude ?? null) !== (original.latitude ?? null) ||
+      (values.longitude ?? null) !== (original.longitude ?? null)
+        ? values.latitude !== null && values.longitude !== null
+          ? { latitude: values.latitude, longitude: values.longitude }
+          : {}
+        : {}),
+      ...((values.locationName || "") !== (original.locationName ?? "")
+        ? { locationName: values.locationName }
         : {}),
       // Server replace semantics: selalu kirim daftar final (kosong = hapus).
       items: values.items,
