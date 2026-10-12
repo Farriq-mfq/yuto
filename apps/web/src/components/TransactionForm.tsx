@@ -97,6 +97,16 @@ function parsePositiveInt(text: string): number {
   return Number.isSafeInteger(parsed) ? parsed : 0;
 }
 
+/**
+ * Nilai `datetime-local` valid bila tidak kosong dan bisa di-parse
+ * menjadi instant yang valid. `new Date("")` menghasilkan Invalid Date
+ * yang melempar RangeError saat `.toISOString()` dipanggil.
+ */
+export function isValidLocalDateTime(value: string): boolean {
+  if (value === "") return false;
+  return !Number.isNaN(new Date(value).getTime());
+}
+
 const CHIPS = [
   { label: strings.chip10k, value: 10_000 },
   { label: strings.chip20k, value: 20_000 },
@@ -224,11 +234,17 @@ export function TransactionForm({
     initial,
   ]);
 
+  const dateError =
+    occurredAtLocal === "" || !isValidLocalDateTime(occurredAtLocal)
+      ? strings.dateInvalid
+      : null;
+
   const canSave =
     accountId !== "" &&
     categoryId !== "" &&
     amount > 0 &&
     title.trim() !== "" &&
+    dateError === null &&
     itemsError === null &&
     !pending;
 
@@ -241,14 +257,15 @@ export function TransactionForm({
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!canSave) return;
+    const parsedDate = new Date(occurredAtLocal);
+    if (!canSave || Number.isNaN(parsedDate.getTime())) return;
     onSubmit({
       kind,
       accountId,
       categoryId,
       title: title.trim(),
       amount,
-      occurredAtIso: new Date(occurredAtLocal).toISOString(),
+      occurredAtIso: parsedDate.toISOString(),
       note: note.trim(),
       items: itemsError
         ? []
@@ -389,6 +406,11 @@ export function TransactionForm({
             onChange={(event) => setOccurredAtLocal(event.target.value)}
             className="min-h-[44px]"
           />
+          {dateError ? (
+            <p role="alert" className="text-sm font-medium text-destructive">
+              {dateError}
+            </p>
+          ) : null}
         </div>
 
         <fieldset className="flex flex-col gap-2">

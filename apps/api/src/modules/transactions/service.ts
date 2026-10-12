@@ -326,6 +326,20 @@ export async function updateTransaction(
       "Jumlah harga item harus sama dengan nominal transaksi.",
     );
   }
+  // Patching the amount without touching items would leave stored items
+  // diverged from the amount, so require them to still add up. With no
+  // stored items there is no invariant to preserve.
+  if (
+    patch.amount !== undefined &&
+    patch.items === undefined &&
+    existing.items.length > 0 &&
+    itemsTotal(existing.items) !== patch.amount
+  ) {
+    throw new TransactionInputError(
+      "item-sum-mismatch",
+      "Jumlah harga item harus sama dengan nominal transaksi.",
+    );
+  }
 
   return db.transaction(async (tx) => {
     const values: Partial<typeof transactions.$inferInsert> = {};

@@ -804,4 +804,75 @@ describe("transactions", () => {
     );
     expect(noCategory.status).toBe(404);
   });
+
+  it("accepts a patched amount that matches the stored items sum", async () => {
+    const app = createApp();
+    const cookie = await loginCookie(app);
+    const accountId = await createAccount(app, cookie);
+    const categoryId = await createCategory("expense");
+
+    const created = await createTx(app, cookie, {
+      accountId,
+      categoryId,
+      kind: "expense",
+      title: "Belanja",
+      amount: 30000,
+      occurredAt: new Date().toISOString(),
+      items: [
+        { name: "A", quantity: 1, unitPrice: 10000 },
+        { name: "B", quantity: 1, unitPrice: 20000 },
+      ],
+    });
+
+    const res = await app.handle(
+      authed(`/api/transactions/${created.id}`, cookie, {
+        method: "PATCH",
+        json: { amount: 30000 },
+      }),
+    );
+    expect(res.status).toBe(200);
+    const updated = (await res.json()) as TxBody;
+    expect(updated.amount).toBe(30000);
+    expect(updated.items).toHaveLength(2);
+    expect(
+      updated.items.reduce((s, i) => s + i.quantity * i.unitPrice, 0),
+    ).toBe(30000);
+  });
+
+  it("rejects a patched amount that diverges from the stored items sum", async () => {
+    const app = createApp();
+    const cookie = await loginCookie(app);
+    const accountId = await createAccount(app, cookie);
+    const categoryId = await createCategory("expense");
+
+    const created = await createTx(app, cookie, {
+      accountId,
+      categoryId,
+      kind: "expense",
+      title: "Belanja",
+      amount: 30000,
+      occurredAt: new Date().toISOString(),
+      items: [
+        { name: "A", quantity: 1, unitPrice: 10000 },
+        { name: "B", quantity: 1, unitPrice: 20000 },
+      ],
+    });
+
+    const res = await app.handle(
+      authed(`/api/transactions/${created.id}`, cookie, {
+        method: "PATCH",
+        json: { amount: 9999 },
+      }),
+    );
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      error: { code: "VALIDATION", message: expect.any(String) },
+    });
+
+    const fetched = (await (
+      await app.handle(authed(`/api/transactions/${created.id}`, cookie))
+    ).json()) as TxBody;
+    expect(fetched.amount).toBe(30000);
+    expect(fetched.items).toHaveLength(2);
+  });
 });

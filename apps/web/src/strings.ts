@@ -42,6 +42,7 @@ export const strings = {
   categoryLabel: "Kategori",
   noteLabel: "Catatan",
   dateLabel: "Waktu",
+  dateInvalid: "Isi waktu transaksi dengan tanggal dan jam yang valid.",
   itemsLabel: "Rincian",
   locationLabel: "Lokasi",
   noNote: "—",
