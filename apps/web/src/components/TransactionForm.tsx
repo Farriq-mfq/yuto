@@ -180,6 +180,17 @@ export function TransactionForm({
     () => categories.filter((category) => category.kind === kind),
     [categories, kind],
   );
+  // Label trigger di-render eksplisit dari data (bukan SelectValue):
+  // Base UI me-resolve label dari item yang ter-mount; saat popup
+  // tertutup (unmount) ia fallback ke raw value sehingga UUID tampil.
+  const selectedAccount = useMemo(
+    () => accounts.find((account) => account.id === accountId) ?? null,
+    [accounts, accountId],
+  );
+  const selectedCategory = useMemo(
+    () => categories.find((category) => category.id === categoryId) ?? null,
+    [categories, categoryId],
+  );
 
   // Kontrol tanggal & jam terpisah berbagi satu string `occurredAtLocal`
   // agar format, validasi, dan pratinjau tak berubah perilaku.
@@ -332,7 +343,14 @@ export function TransactionForm({
             onValueChange={(next) => setAccountId(next ?? "")}
           >
             <SelectTrigger id="tx-account" className="min-h-[44px] w-full">
-              <SelectValue placeholder={strings.selectAccount} />
+              {selectedAccount ? (
+                <span className="flex min-w-0 flex-1 truncate text-left">
+                  {selectedAccount.name} ·{" "}
+                  {formatRupiah(selectedAccount.balance)}
+                </span>
+              ) : (
+                <SelectValue placeholder={strings.selectAccount} />
+              )}
             </SelectTrigger>
             <SelectContent>
               {accounts.map((account) => (
@@ -354,7 +372,13 @@ export function TransactionForm({
             onValueChange={(next) => setCategoryId(next ?? "")}
           >
             <SelectTrigger id="tx-category" className="min-h-[44px] w-full">
-              <SelectValue placeholder={strings.selectCategory} />
+              {selectedCategory ? (
+                <span className="flex min-w-0 flex-1 truncate text-left">
+                  {selectedCategory.name}
+                </span>
+              ) : (
+                <SelectValue placeholder={strings.selectCategory} />
+              )}
             </SelectTrigger>
             <SelectContent>
               {visibleCategories.map((category) => (
