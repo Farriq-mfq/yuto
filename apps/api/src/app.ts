@@ -5,6 +5,7 @@ import { authRoutes } from "./modules/auth/routes";
 import { SESSION_COOKIE, verifySessionToken } from "./modules/auth/service";
 import { accountRoutes } from "./modules/accounts/routes";
 import { categoryRoutes } from "./modules/categories/routes";
+import { reportRoutes } from "./modules/reports/routes";
 import { transactionRoutes } from "./modules/transactions/routes";
 import { transferRoutes } from "./modules/transfers/routes";
 
@@ -48,6 +49,7 @@ export function createApp(env: Env = getEnv()) {
         .use(authRoutes(env))
         .use(accountRoutes())
         .use(categoryRoutes())
+        .use(reportRoutes())
         .use(transactionRoutes())
         .use(transferRoutes()),
     );
