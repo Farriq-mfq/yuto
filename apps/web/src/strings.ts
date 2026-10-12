@@ -1,5 +1,6 @@
 export const strings = {
   appName: "Yuto",
+  appLogoAlt: "Logo Yuto",
   loginTitle: "Masuk ke Yuto",
   loginSubtitle: "Masukkan kata sandi pemilik untuk membuka data keuanganmu.",
   passwordLabel: "Kata sandi",
