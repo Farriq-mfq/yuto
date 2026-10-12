@@ -13,13 +13,12 @@ import Activity from "./pages/Activity";
 import Login from "./pages/Login";
 import AccountEdit from "./pages/AccountEdit";
 import AccountNew from "./pages/AccountNew";
-import Placeholder from "./pages/Placeholder";
 import Record from "./pages/Record";
+import Reports from "./pages/Reports";
 import TransactionDetail from "./pages/TransactionDetail";
 import TransactionEdit from "./pages/TransactionEdit";
 import Transfer from "./pages/Transfer";
 import Wallet from "./pages/Wallet";
-import { strings } from "./strings";
 
 const queryClient = new QueryClient();
 
@@ -57,10 +56,7 @@ createRoot(root).render(
               element={<TransactionEdit />}
             />
             <Route path="/activity" element={<Activity />} />
-            <Route
-              path="/reports"
-              element={<Placeholder title={strings.navReports} />}
-            />
+            <Route path="/reports" element={<Reports />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

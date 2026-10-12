@@ -4,6 +4,7 @@ import {
   currentMonthJakarta,
   dayKeyJakarta,
   formatLocalDateId,
+  formatPercent,
   formatRupiah,
   formatTimeJakarta,
   localDateFromDatePart,
@@ -103,5 +104,13 @@ describe("combineLocalDateTime", () => {
     const picked = localDateFromDatePart(date);
     expect(picked).toBeDefined();
     expect(combineLocalDateTime(picked as Date, time)).toBe(original);
+  });
+});
+
+describe("formatPercent", () => {
+  test("formats Indonesian percent with one decimal", () => {
+    expect(formatPercent(33.333)).toBe("33,3%");
+    expect(formatPercent(0)).toBe("0,0%");
+    expect(formatPercent(100)).toBe("100,0%");
   });
 });

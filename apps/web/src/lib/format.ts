@@ -173,6 +173,16 @@ export function formatGrouped(amount: number): string {
   return groupedId.format(Math.round(amount));
 }
 
+const percentId = new Intl.NumberFormat("id-ID", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
+/** Persen Indonesia satu desimal, mis. `33,3%`. */
+export function formatPercent(value: number): string {
+  return `${percentId.format(value)}%`;
+}
+
 /** Ambil digit saja, maksimal 15 digit agar aman sebagai integer. */
 export function digitsOnly(value: string): string {
   return value.replace(/[^0-9]/g, "").slice(0, 15);
