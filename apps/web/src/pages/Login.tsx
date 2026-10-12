@@ -47,7 +47,7 @@ export default function Login() {
           <CardDescription>{strings.loginSubtitle}</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={onSubmit} className="flex flex-col gap-4">
+          <form onSubmit={onSubmit} className="flex flex-col gap-5">
             <div className="flex flex-col gap-2">
               <Label htmlFor="password">{strings.passwordLabel}</Label>
               <Input

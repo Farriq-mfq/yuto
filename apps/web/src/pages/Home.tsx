@@ -133,7 +133,7 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6">
+    <main className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-3">
         <div className="flex min-w-0 items-center gap-2">
           <img
@@ -198,7 +198,7 @@ export default function Home() {
         <div
           aria-busy="true"
           aria-label={strings.loading}
-          className="mt-4 flex flex-col gap-2"
+          className="mt-5 flex flex-col gap-3"
         >
           <Skeleton className="h-28 rounded-2xl" />
           <Skeleton className="h-12 rounded-xl" />
@@ -206,7 +206,7 @@ export default function Home() {
           <Skeleton className="h-16 rounded-xl" />
         </div>
       ) : queryError ? (
-        <Card className="mt-4">
+        <Card className="mt-5">
           <CardContent className="items-center p-6 text-center">
             <p className="text-sm text-muted-foreground">{strings.loadError}</p>
             <Button
@@ -220,7 +220,7 @@ export default function Home() {
         </Card>
       ) : (
         <>
-          <Card className="mt-4" aria-label={strings.netThisMonth}>
+          <Card className="mt-5" aria-label={strings.netThisMonth}>
             <CardContent>
               <p className="text-sm text-muted-foreground">
                 {strings.netThisMonth}
@@ -228,7 +228,7 @@ export default function Home() {
               <p className="mt-1 text-3xl font-bold tabular-nums">
                 {formatRupiah(totals.net)}
               </p>
-              <div className="mt-3 flex gap-4 text-sm tabular-nums">
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm tabular-nums">
                 <p>
                   <span className="text-muted-foreground">
                     {strings.monthIncome}:{" "}
@@ -252,6 +252,7 @@ export default function Home() {
           <Tabs
             value={filter}
             onValueChange={(next) => setFilter(next as Filter)}
+            className="mt-5"
           >
             <TabsList
               aria-label={strings.filterLabel}
@@ -270,7 +271,7 @@ export default function Home() {
           </Tabs>
 
           {(list ?? []).length === 0 ? (
-            <Card className="mt-4">
+            <Card className="mt-5">
               <CardContent className="items-center p-8 text-center">
                 <span
                   aria-hidden="true"
@@ -287,7 +288,7 @@ export default function Home() {
               </CardContent>
             </Card>
           ) : (
-            <div className="mt-4 flex flex-col gap-4">
+            <div className="mt-5 flex flex-col gap-5">
               {groups.map((group) => (
                 <section key={group.key} aria-label={group.label}>
                   <div className="flex items-baseline justify-between gap-2 px-1">
@@ -297,13 +298,13 @@ export default function Home() {
                       {formatRupiah(Math.abs(group.net))}
                     </p>
                   </div>
-                  <Card className="mt-1">
+                  <Card className="mt-2">
                     <CardContent className="gap-0 p-0">
                       {group.rows.map((row, index) => (
                         <Link
                           key={row.id}
                           to={`/transactions/${row.id}`}
-                          className={`flex min-h-[56px] items-center gap-3 px-4 py-2 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
+                          className={`flex min-h-[56px] items-center gap-4 px-5 py-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
                             index > 0 ? "border-t border-border" : ""
                           }`}
                         >

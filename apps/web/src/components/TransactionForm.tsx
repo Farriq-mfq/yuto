@@ -370,7 +370,7 @@ export function TransactionForm({
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
+      <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-5">
         <div className="flex flex-col gap-2">
           <Tabs
             value={kind}
@@ -554,12 +554,12 @@ export function TransactionForm({
           ) : null}
         </div>
 
-        <fieldset className="flex flex-col gap-2">
+        <fieldset className="flex flex-col gap-3">
           <legend className="text-sm font-medium">{strings.itemsLabel}</legend>
           {items.map((item) => (
             <div
               key={item.key}
-              className="flex items-end gap-2 rounded-xl border border-border p-2"
+              className="flex items-end gap-2 rounded-xl border border-border p-3"
             >
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <Label htmlFor={`item-name-${item.key}`}>
@@ -676,7 +676,7 @@ export function TransactionForm({
         </div>
 
         {mapEnabled ? (
-          <fieldset className="flex flex-col gap-2">
+          <fieldset className="flex flex-col gap-3">
             <div className="flex min-h-[44px] items-center justify-between gap-2">
               <label
                 htmlFor="tx-location-toggle"
@@ -740,7 +740,7 @@ export function TransactionForm({
         {preview ? (
           <p
             aria-live="polite"
-            className="rounded-xl bg-muted px-3 py-2 text-sm tabular-nums"
+            className="rounded-xl bg-muted px-4 py-3 text-sm tabular-nums"
           >
             {strings.balancePreview}: {formatRupiah(preview.before)} →{" "}
             {formatRupiah(preview.after)}
@@ -753,7 +753,7 @@ export function TransactionForm({
           </p>
         ) : null}
 
-        <div className="flex gap-2 pb-2">
+        <div className="flex gap-3 pb-2">
           <Button
             type="button"
             variant="outline"
