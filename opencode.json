@@ -17,7 +17,21 @@
           "git status*": "allow",
           "git diff*": "allow",
           "git log*": "allow",
-          "git push*": "deny",
+          "git switch*": "allow",
+          "git add*": "allow",
+          "git commit*": "allow",
+          "git push*": "allow",
+          "git push --force*": "deny",
+          "git push -f*": "deny",
+          "git push --delete*": "deny",
+          "git push origin --delete*": "deny",
+          "git push origin main*": "deny",
+          "git push origin master*": "deny",
+          "git push origin HEAD:main*": "deny",
+          "git push origin HEAD:master*": "deny",
+          "git push --tags*": "deny",
+          "git push origin v*": "deny",
+          "git tag*": "deny",
           "rm -rf*": "deny"
         }
       }
@@ -39,7 +53,21 @@
           "git status*": "allow",
           "git diff*": "allow",
           "git log*": "allow",
-          "git push*": "deny",
+          "git switch*": "allow",
+          "git add*": "allow",
+          "git commit*": "allow",
+          "git push*": "allow",
+          "git push --force*": "deny",
+          "git push -f*": "deny",
+          "git push --delete*": "deny",
+          "git push origin --delete*": "deny",
+          "git push origin main*": "deny",
+          "git push origin master*": "deny",
+          "git push origin HEAD:main*": "deny",
+          "git push origin HEAD:master*": "deny",
+          "git push --tags*": "deny",
+          "git push origin v*": "deny",
+          "git tag*": "deny",
           "rm -rf*": "deny"
         }
       }
@@ -54,9 +82,7 @@
           "*": "deny",
           "git status*": "allow",
           "git diff*": "allow",
-          "git log*": "allow",
-          "git push*": "deny",
-          "rm -rf*": "deny"
+          "git log*": "allow"
         }
       }
     },
@@ -73,7 +99,21 @@
           "git status*": "allow",
           "git diff*": "allow",
           "git log*": "allow",
-          "git push*": "deny",
+          "git switch*": "allow",
+          "git add*": "allow",
+          "git commit*": "allow",
+          "git push*": "allow",
+          "git push --force*": "deny",
+          "git push -f*": "deny",
+          "git push --delete*": "deny",
+          "git push origin --delete*": "deny",
+          "git push origin main*": "deny",
+          "git push origin master*": "deny",
+          "git push origin HEAD:main*": "deny",
+          "git push origin HEAD:master*": "deny",
+          "git push --tags*": "deny",
+          "git push origin v*": "deny",
+          "git tag*": "deny",
           "rm -rf*": "deny"
         }
       }
@@ -91,7 +131,21 @@
           "git status*": "allow",
           "git diff*": "allow",
           "git log*": "allow",
-          "git push*": "deny",
+          "git switch*": "allow",
+          "git add*": "allow",
+          "git commit*": "allow",
+          "git push*": "allow",
+          "git push --force*": "deny",
+          "git push -f*": "deny",
+          "git push --delete*": "deny",
+          "git push origin --delete*": "deny",
+          "git push origin main*": "deny",
+          "git push origin master*": "deny",
+          "git push origin HEAD:main*": "deny",
+          "git push origin HEAD:master*": "deny",
+          "git push --tags*": "deny",
+          "git push origin v*": "deny",
+          "git tag*": "deny",
           "rm -rf*": "deny"
         }
       }
@@ -109,6 +163,21 @@
           "*": "deny"
         }
       }
+    }
+  },
+  "permission": {
+    "bash": {
+      "git push --force*": "deny",
+      "git push -f*": "deny",
+      "git push --delete*": "deny",
+      "git push origin --delete*": "deny",
+      "git push origin main*": "deny",
+      "git push origin master*": "deny",
+      "git push origin HEAD:main*": "deny",
+      "git push origin HEAD:master*": "deny",
+      "git push --tags*": "deny",
+      "git push origin v*": "deny",
+      "git tag*": "deny"
     }
   }
 }

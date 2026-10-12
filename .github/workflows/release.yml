@@ -1,0 +1,35 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write   # needed to create the GitHub Release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Tag must be semantic (vMAJOR.MINOR.PATCH or -prerelease)
+        run: |
+          if ! [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::$GITHUB_REF_NAME is not vMAJOR.MINOR.PATCH[-prerelease]"; exit 1
+          fi
+      - name: Tagged commit must be on main
+        run: |
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main \
+            || { echo "::error::$GITHUB_REF_NAME is not on main"; exit 1; }
+      # shortcut: does not re-run tests; only tag a main commit whose CI is green
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          flags=""
+          [[ "$GITHUB_REF_NAME" == *-* ]] && flags="--prerelease"
+          gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes \
+            --title "Yuto $GITHUB_REF_NAME" $flags
