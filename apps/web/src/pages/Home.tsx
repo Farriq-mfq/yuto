@@ -1,5 +1,4 @@
 import {
-  CalendarIcon,
   DeviceDesktopIcon,
   MoonIcon,
   ReceiptIcon,
@@ -7,12 +6,10 @@ import {
 } from "@/icons";
 import { yutoIcon64 } from "@/logo";
 import { useMemo, useState } from "react";
-import { id as localeId } from "react-day-picker/locale";
 import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate } from "react-router-dom";
 import { KindBadge, SignedAmount } from "@/components/SignedAmount";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
@@ -21,24 +18,16 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isUnauthorized } from "../lib/api";
 import {
   currentMonthJakarta,
   dayKeyJakarta,
-  firstDateOfMonthKey,
   formatDayJakarta,
-  formatMonthId,
   formatRupiah,
   formatTimeJakarta,
-  monthKeyFromDate,
 } from "../lib/format";
 import {
   fetchMonthTransactions,
@@ -94,14 +83,11 @@ function groupByDay(rows: MonthTransaction[]): DayGroup[] {
 export default function Home() {
   const [month, setMonth] = useState(() => currentMonthJakarta());
   const [filter, setFilter] = useState<Filter>("all");
-  const [monthOpen, setMonthOpen] = useState(false);
   const { preference, setPreference } = useTheme();
   const activeTheme =
     themeOptions.find((option) => option.value === preference) ??
     themeOptions[0];
   const ThemeIcon = activeTheme.Icon;
-  const monthDate = firstDateOfMonthKey(month);
-  const monthButtonLabel = formatMonthId(month) ?? month;
 
   // shortcut: ringkasan bulan diagregat client-side dari daftar transaksi
   // bulan ini (tanpa endpoint reports).
@@ -159,42 +145,17 @@ export default function Home() {
           />
           <h1 className="truncate font-display text-xl font-bold">{strings.homeTitle}</h1>
         </div>
-        <div className="flex w-full min-w-0 items-end gap-2 min-[380px]:w-auto">
-          <div className="flex min-w-0 flex-1 flex-col gap-2 min-[380px]:flex-none">
-            <Label htmlFor="month-button">{strings.monthLabel}</Label>
-            <Popover open={monthOpen} onOpenChange={setMonthOpen}>
-              <PopoverTrigger
-                render={
-                  <Button
-                    id="month-button"
-                    type="button"
-                    variant="outline"
-                    className="min-h-[44px] w-full min-w-0 justify-start font-normal min-[380px]:w-[170px]"
-                  >
-                    <CalendarIcon size={20} aria-hidden="true" />
-                    <span className="truncate">{monthButtonLabel}</span>
-                  </Button>
-                }
-              />
-              <PopoverContent align="start" className="w-auto p-2">
-                <Calendar
-                  mode="single"
-                  locale={localeId}
-                  key={month}
-                  defaultMonth={monthDate ?? new Date()}
-                  selected={
-                    month === currentMonthJakarta() ? new Date() : undefined
-                  }
-                  onSelect={(next) => {
-                    if (!next) return;
-                    setMonth(monthKeyFromDate(next));
-                    setMonthOpen(false);
-                  }}
-                  className="[--cell-size:--spacing(11)]"
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+        <div className="flex w-full min-w-0 items-center gap-2 min-[380px]:w-auto">
+          <Input
+            id="month-input"
+            type="month"
+            aria-label={strings.monthLabel}
+            value={month}
+            onChange={(event) => {
+              if (event.target.value !== "") setMonth(event.target.value);
+            }}
+            className="min-h-[44px] min-w-0 flex-1 min-[380px]:w-[170px] min-[380px]:flex-none"
+          />
           <DropdownMenu>
             <DropdownMenuTrigger
               render={

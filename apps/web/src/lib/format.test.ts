@@ -3,13 +3,10 @@ import {
   combineLocalDateTime,
   currentMonthJakarta,
   dayKeyJakarta,
-  firstDateOfMonthKey,
   formatLocalDateId,
-  formatMonthId,
   formatRupiah,
   formatTimeJakarta,
   localDateFromDatePart,
-  monthKeyFromDate,
   splitLocalDateTime,
   toDateTimeLocalJakarta,
 } from "./format";
@@ -85,19 +82,6 @@ describe("formatLocalDateId", () => {
   });
 });
 
-describe("formatMonthId", () => {
-  test("formats a month key without timezone conversion", () => {
-    expect(formatMonthId("2026-10")).toBe("Oktober 2026");
-    expect(formatMonthId("2026-01")).toBe("Januari 2026");
-  });
-
-  test("rejects malformed keys", () => {
-    expect(formatMonthId("")).toBeNull();
-    expect(formatMonthId("2026-13")).toBeNull();
-    expect(formatMonthId("2026-10-12")).toBeNull();
-  });
-});
-
 describe("localDateFromDatePart", () => {
   test("parses to the same local calendar day", () => {
     const date = localDateFromDatePart("2026-10-12");
@@ -112,12 +96,6 @@ describe("localDateFromDatePart", () => {
   });
 });
 
-describe("monthKeyFromDate", () => {
-  test("reads the local calendar month", () => {
-    expect(monthKeyFromDate(new Date(2026, 9, 1))).toBe("2026-10");
-  });
-});
-
 describe("combineLocalDateTime", () => {
   test("round-trips the existing helper format exactly", () => {
     const original = "2026-10-12T01:30";
@@ -125,19 +103,5 @@ describe("combineLocalDateTime", () => {
     const picked = localDateFromDatePart(date);
     expect(picked).toBeDefined();
     expect(combineLocalDateTime(picked as Date, time)).toBe(original);
-  });
-});
-
-describe("firstDateOfMonthKey", () => {
-  test("returns the first day of the month", () => {
-    const date = firstDateOfMonthKey("2026-10");
-    expect(date?.getFullYear()).toBe(2026);
-    expect(date?.getMonth()).toBe(9);
-    expect(date?.getDate()).toBe(1);
-  });
-
-  test("rejects malformed keys", () => {
-    expect(firstDateOfMonthKey("")).toBeUndefined();
-    expect(firstDateOfMonthKey("2026-13")).toBeUndefined();
   });
 });
