@@ -5,20 +5,32 @@ import {
   SunIcon,
 } from "@/icons";
 import { yutoIcon64 } from "@/logo";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { KindBadge, SignedAmount } from "@/components/SignedAmount";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { api, isUnauthorized } from "../lib/api";
-import { currentMonthJakarta, formatRupiah } from "../lib/format";
+import { isUnauthorized } from "../lib/api";
+import {
+  currentMonthJakarta,
+  dayKeyJakarta,
+  formatDayJakarta,
+  formatRupiah,
+  formatTimeJakarta,
+} from "../lib/format";
+import {
+  fetchMonthTransactions,
+  type MonthTransaction,
+  type TxKind,
+} from "../lib/queries";
 import { useTheme, type ThemePreference } from "../lib/theme";
 import { strings } from "../strings";
 
-type Filter = "all" | "expense" | "income";
+type Filter = "all" | TxKind;
 
 const filters: Array<{ value: Filter; label: string }> = [
   { value: "all", label: strings.filterAll },
@@ -33,6 +45,34 @@ const themeMeta: Record<ThemePreference, { label: string; Icon: typeof SunIcon }
   dark: { label: strings.themeToggleDark, Icon: MoonIcon },
 };
 
+interface DayGroup {
+  key: string;
+  label: string;
+  net: number;
+  rows: MonthTransaction[];
+}
+
+function groupByDay(rows: MonthTransaction[]): DayGroup[] {
+  const groups = new Map<string, MonthTransaction[]>();
+  for (const row of rows) {
+    const key = dayKeyJakarta(row.occurredAt);
+    const list = groups.get(key);
+    if (list) list.push(row);
+    else groups.set(key, [row]);
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => (a < b ? 1 : -1))
+    .map(([key, dayRows]) => ({
+      key,
+      label: formatDayJakarta(dayRows[0]?.occurredAt ?? key),
+      net: dayRows.reduce(
+        (sum, row) => sum + (row.kind === "income" ? row.amount : -row.amount),
+        0,
+      ),
+      rows: dayRows,
+    }));
+}
+
 export default function Home() {
   const [month, setMonth] = useState(() => currentMonthJakarta());
   const [filter, setFilter] = useState<Filter>("all");
@@ -40,17 +80,46 @@ export default function Home() {
   const theme = themeMeta[preference];
   const ThemeIcon = theme.Icon;
 
-  const session = useQuery({
-    queryKey: ["session"],
-    queryFn: async () => {
-      const { data, error } = await api.api.auth.session.get();
-      if (error) throw error;
-      return data;
-    },
+  // shortcut: ringkasan bulan diagregat client-side dari daftar transaksi
+  // bulan ini (tanpa endpoint reports).
+  const summary = useQuery({
+    queryKey: ["transactions", month],
+    queryFn: () => fetchMonthTransactions(month),
+    retry: false,
+  });
+  const filtered = useQuery({
+    queryKey: ["transactions", month, filter],
+    queryFn: () =>
+      fetchMonthTransactions(month, filter === "all" ? undefined : filter),
+    enabled: filter !== "all",
     retry: false,
   });
 
-  if (session.error && isUnauthorized(session.error)) {
+  const list = filter === "all" ? summary.data : filtered.data;
+  const pending = summary.isPending || (filter !== "all" && filtered.isPending);
+  const queryError = summary.error ?? (filter !== "all" ? filtered.error : null);
+
+  const totals = useMemo(() => {
+    let income = 0;
+    let expense = 0;
+    for (const row of summary.data ?? []) {
+      if (row.kind === "income") income += row.amount;
+      else expense += row.amount;
+    }
+    return { income, expense, net: income - expense };
+  }, [summary.data]);
+
+  const groups = useMemo(() => groupByDay(list ?? []), [list]);
+
+  function refetch() {
+    void summary.refetch();
+    if (filter !== "all") void filtered.refetch();
+  }
+
+  if (
+    (summary.error && isUnauthorized(summary.error)) ||
+    (filtered.error && isUnauthorized(filtered.error))
+  ) {
     return <Navigate to="/login" replace />;
   }
 
@@ -93,23 +162,24 @@ export default function Home() {
         </div>
       </div>
 
-      {session.isPending ? (
+      {pending ? (
         <div
           aria-busy="true"
           aria-label={strings.loading}
           className="mt-4 flex flex-col gap-2"
         >
-          <Skeleton className="h-24 rounded-2xl" />
+          <Skeleton className="h-28 rounded-2xl" />
           <Skeleton className="h-12 rounded-xl" />
-          <Skeleton className="h-12 rounded-xl" />
+          <Skeleton className="h-16 rounded-xl" />
+          <Skeleton className="h-16 rounded-xl" />
         </div>
-      ) : session.isError ? (
+      ) : queryError ? (
         <Card className="mt-4">
           <CardContent className="items-center p-6 text-center">
             <p className="text-sm text-muted-foreground">{strings.loadError}</p>
             <Button
               type="button"
-              onClick={() => session.refetch()}
+              onClick={refetch}
               className="mt-3 min-h-[44px]"
             >
               {strings.retry}
@@ -124,8 +194,26 @@ export default function Home() {
                 {strings.netThisMonth}
               </p>
               <p className="mt-1 text-3xl font-bold tabular-nums">
-                {formatRupiah(0)}
+                {formatRupiah(totals.net)}
               </p>
+              <div className="mt-3 flex gap-4 text-sm tabular-nums">
+                <p>
+                  <span className="text-muted-foreground">
+                    {strings.monthIncome}:{" "}
+                  </span>
+                  <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                    +{formatRupiah(totals.income)}
+                  </span>
+                </p>
+                <p>
+                  <span className="text-muted-foreground">
+                    {strings.monthExpense}:{" "}
+                  </span>
+                  <span className="font-semibold text-destructive">
+                    -{formatRupiah(totals.expense)}
+                  </span>
+                </p>
+              </div>
             </CardContent>
           </Card>
 
@@ -144,22 +232,72 @@ export default function Home() {
             ))}
           </div>
 
-          <Card className="mt-4">
-            <CardContent className="items-center p-8 text-center">
-              <span
-                aria-hidden="true"
-                className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground"
-              >
-                <ReceiptIcon size={24} strokeWidth={2} />
-              </span>
-              <p className="text-base font-semibold">
-                {strings.emptyTransactions}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {strings.emptyTransactionsHint}
-              </p>
-            </CardContent>
-          </Card>
+          {(list ?? []).length === 0 ? (
+            <Card className="mt-4">
+              <CardContent className="items-center p-8 text-center">
+                <span
+                  aria-hidden="true"
+                  className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground"
+                >
+                  <ReceiptIcon size={24} strokeWidth={2} />
+                </span>
+                <p className="text-base font-semibold">
+                  {strings.emptyTransactions}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {strings.emptyTransactionsHint}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="mt-4 flex flex-col gap-4">
+              {groups.map((group) => (
+                <section key={group.key} aria-label={group.label}>
+                  <div className="flex items-baseline justify-between gap-2 px-1">
+                    <h2 className="text-sm font-semibold">{group.label}</h2>
+                    <p className="text-sm font-semibold tabular-nums text-muted-foreground">
+                      {group.net < 0 ? "-" : "+"}
+                      {formatRupiah(Math.abs(group.net))}
+                    </p>
+                  </div>
+                  <Card className="mt-1">
+                    <CardContent className="gap-0 p-0">
+                      {group.rows.map((row, index) => (
+                        <Link
+                          key={row.id}
+                          to={`/transactions/${row.id}`}
+                          className={`flex min-h-[56px] items-center gap-3 px-4 py-2 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
+                            index > 0 ? "border-t border-border" : ""
+                          }`}
+                        >
+                          <span
+                            aria-hidden="true"
+                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
+                          >
+                            <ReceiptIcon size={20} strokeWidth={2} />
+                          </span>
+                          <span className="flex min-w-0 flex-1 flex-col">
+                            <span className="truncate text-sm font-medium">
+                              {row.title}
+                            </span>
+                            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              {formatTimeJakarta(row.occurredAt)}
+                              <KindBadge kind={row.kind} />
+                            </span>
+                          </span>
+                          <SignedAmount
+                            kind={row.kind}
+                            amount={row.amount}
+                            className="shrink-0 text-sm font-semibold"
+                          />
+                        </Link>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </section>
+              ))}
+            </div>
+          )}
         </>
       )}
     </main>

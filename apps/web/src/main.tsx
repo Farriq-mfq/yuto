@@ -11,6 +11,9 @@ import { applyThemePreference, THEME_STORAGE_KEY } from "./lib/theme";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Placeholder from "./pages/Placeholder";
+import Record from "./pages/Record";
+import TransactionDetail from "./pages/TransactionDetail";
+import TransactionEdit from "./pages/TransactionEdit";
 import { strings } from "./strings";
 
 const queryClient = new QueryClient();
@@ -42,9 +45,11 @@ createRoot(root).render(
               path="/wallet"
               element={<Placeholder title={strings.navWallet} />}
             />
+            <Route path="/record" element={<Record />} />
+            <Route path="/transactions/:id" element={<TransactionDetail />} />
             <Route
-              path="/record"
-              element={<Placeholder title={strings.navRecord} />}
+              path="/transactions/:id/edit"
+              element={<TransactionEdit />}
             />
             <Route
               path="/activity"
