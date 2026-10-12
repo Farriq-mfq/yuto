@@ -33,18 +33,18 @@ Setup:
 1. **Type-only.** Web code may use `import type ... from "@yuto/api"`. Never import runtime values from the API: it would pull Drizzle, the database client, and secrets into the browser bundle. Set `"verbatimModuleSyntax": true` in the web `tsconfig.json` so a non-type import is an error.
 2. **No relative imports across apps.** Never `../../api/src/...` or `../../web/src/...`.
 3. **Aliases inside an app only.** `@/` maps to that app's `src/`. Set it in the app's `tsconfig.json` (`"paths": { "@/*": ["./src/*"] }`) and, for web, in `vite.config.ts` (`resolve.alias`). Bun reads tsconfig paths for the API with no extra setup.
-4. **No shared package yet.** *Shortcut: if both apps need the same constant or helper, copy the few lines. Create `packages/shared` only when two or more real pieces are shared.*
+4. **No shared package yet.** _Shortcut: if both apps need the same constant or helper, copy the few lines. Create `packages/shared` only when two or more real pieces are shared._
 5. **Dependencies:** install from the repo root. Use `bun add <pkg> --cwd apps/web` (or `apps/api`) so it lands in the right `package.json`. One lockfile at the root, always committed.
 
 ## Troubleshooting
 
-| Problem | Fix |
-|---------|-----|
-| `Cannot find module '@yuto/api'` | Missing workspace link: add the devDependency above, run `bun install` at the root |
-| Types are stale after an API change | Restart the TypeScript server in the editor; check `app.ts` exports `App` |
-| Web build includes server code or fails on `bun:` / `pg` | A runtime import from `@yuto/api` slipped in; change it to `import type` |
-| `Cannot find module '@/...'` in web | Alias missing in `vite.config.ts` or `tsconfig.json` |
-| Docker build cannot resolve the workspace | Build with the repo root as context and `COPY` the whole repo before `bun install --frozen-lockfile` |
+| Problem                                                  | Fix                                                                                                  |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `Cannot find module '@yuto/api'`                         | Missing workspace link: add the devDependency above, run `bun install` at the root                   |
+| Types are stale after an API change                      | Restart the TypeScript server in the editor; check `app.ts` exports `App`                            |
+| Web build includes server code or fails on `bun:` / `pg` | A runtime import from `@yuto/api` slipped in; change it to `import type`                             |
+| `Cannot find module '@/...'` in web                      | Alias missing in `vite.config.ts` or `tsconfig.json`                                                 |
+| Docker build cannot resolve the workspace                | Build with the repo root as context and `COPY` the whole repo before `bun install --frozen-lockfile` |
 
 ## Done when
 

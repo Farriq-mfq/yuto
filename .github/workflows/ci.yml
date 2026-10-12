@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:            # every branch, including main after a merge
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: yuto
+          POSTGRES_PASSWORD: yuto_ci_password
+          POSTGRES_DB: yuto_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U yuto -d yuto_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgres://yuto:yuto_ci_password@localhost:5432/yuto_test
+      JWT_SECRET: ci-only-jwt-secret-0123456789abcdef0123456789
+      YUTO_PASSWORD: ci-only-password-123
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      # shortcut: actions pinned by tag and bun by "latest"; pin to a SHA / exact version if builds must be reproducible
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - name: Type check API
+        run: bunx tsc --noEmit -p apps/api
+      - name: Migrate test database
+        run: bun run --cwd apps/api db:migrate
+      - name: Seed test database
+        run: bun run --cwd apps/api db:seed
+      - name: Tests
+        run: bun test
+      - name: Build web (also type-checks it)
+        run: bun run --cwd apps/web build

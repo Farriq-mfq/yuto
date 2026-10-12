@@ -1,0 +1,55 @@
+name: Docker smoke
+
+on:
+  push:
+    paths:
+      - "docker-compose.yml"
+      - "apps/*/Dockerfile"
+      - "apps/web/nginx.conf"
+      - ".dockerignore"
+      - "bun.lock"
+      - ".github/workflows/docker.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create a throwaway .env (CI-only values)
+        run: |
+          cat > .env <<'ENV'
+          POSTGRES_USER=yuto
+          POSTGRES_PASSWORD=yuto_ci_password
+          POSTGRES_DB=yuto
+          DATABASE_URL=postgres://yuto:yuto_ci_password@db:5432/yuto
+          JWT_SECRET=ci-only-jwt-secret-0123456789abcdef0123456789
+          YUTO_PASSWORD=ci-only-password-123
+          PORT=3000
+          NODE_ENV=production
+          COOKIE_SECURE=false
+          ENV
+      - name: Build and start the stack
+        run: docker compose up -d --build
+      - name: Health check through nginx
+        run: |
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:8080/api/health && exit 0
+            sleep 2
+          done
+          exit 1
+      - name: Login works
+        run: |
+          curl -fsS -X POST http://localhost:8080/api/auth/login \
+            -H 'content-type: application/json' \
+            -d '{"password":"ci-only-password-123"}'
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --tail=100
+      - name: Tear down
+        if: always()
+        run: docker compose down -v   # safe: CI runner is throwaway

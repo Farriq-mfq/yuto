@@ -18,6 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api, errorStatus, isUnauthorized } from "../lib/api";
 import { formatDateTimeJakarta, formatRupiah } from "../lib/format";
+import { formatCoords, osmUrl } from "../lib/location";
 import {
   fetchAccountsSummary,
   fetchCategories,
@@ -194,6 +195,27 @@ export default function TransactionDetail() {
                       </dt>
                       <dd className="text-right font-medium">
                         {tx.data.locationName ?? tx.data.address}
+                      </dd>
+                    </div>
+                  ) : null}
+                  {tx.data.latitude !== null &&
+                  tx.data.latitude !== undefined &&
+                  tx.data.longitude !== null &&
+                  tx.data.longitude !== undefined ? (
+                    <div className="flex items-baseline justify-between gap-3">
+                      <dt className="text-muted-foreground">
+                        {strings.locationCoordsLabel}
+                      </dt>
+                      <dd className="text-right font-medium tabular-nums">
+                        {formatCoords(tx.data.latitude, tx.data.longitude)}{" "}
+                        <a
+                          href={osmUrl(tx.data.latitude, tx.data.longitude)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-medium text-primary underline underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          {strings.openInOsm}
+                        </a>
                       </dd>
                     </div>
                   ) : null}

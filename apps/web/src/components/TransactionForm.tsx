@@ -1,6 +1,7 @@
-import { useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { id as localeId } from "react-day-picker/locale";
-import { CalendarIcon, PlusIcon, TrashIcon } from "@/icons";
+import { CalendarIcon, MapPinIcon, PlusIcon, TrashIcon } from "@/icons";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +21,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -36,8 +39,17 @@ import {
   splitLocalDateTime,
 } from "../lib/format";
 import { previewBalance } from "../lib/preview";
-import type { TxKind } from "../lib/queries";
+import { fetchAppConfig, type TxKind } from "../lib/queries";
+import { formatCoords } from "../lib/location";
 import { strings } from "../strings";
+
+// Peta Leaflet di-split ke chunk sendiri: hanya diunduh bila seksi lokasi
+// tampil (mapEnabled), sehingga MAP_ENABLED=false = nol request tile.
+const LocationPicker = lazy(() =>
+  import("./LocationPicker").then((module) => ({
+    default: module.LocationPicker,
+  })),
+);
 
 export interface AccountOption {
   id: string;
@@ -68,6 +80,10 @@ export interface TxFormInitial {
   occurredAtLocal: string;
   note: string;
   items: ItemValue[];
+  /** Pin lokasi; null bila belum ada. */
+  latitude: number | null;
+  longitude: number | null;
+  locationName: string;
 }
 
 export interface TxFormValues {
@@ -80,6 +96,10 @@ export interface TxFormValues {
   occurredAtIso: string;
   note: string;
   items: ItemValue[];
+  /** null bila seksi lokasi mati / pin belum ditaruh (mapping di page). */
+  latitude: number | null;
+  longitude: number | null;
+  locationName: string;
 }
 
 interface TransactionFormProps {
@@ -161,6 +181,14 @@ export function TransactionForm({
   );
   const [dateOpen, setDateOpen] = useState(false);
   const [note, setNote] = useState(initial.note);
+  const [locationOn, setLocationOn] = useState(
+    initial.latitude !== null ||
+      initial.longitude !== null ||
+      initial.locationName !== "",
+  );
+  const [latitude, setLatitude] = useState<number | null>(initial.latitude);
+  const [longitude, setLongitude] = useState<number | null>(initial.longitude);
+  const [locationName, setLocationName] = useState(initial.locationName);
   const [items, setItems] = useState<ItemDraft[]>(() =>
     initial.items.map((item, index) => ({
       key: index,
@@ -176,6 +204,23 @@ export function TransactionForm({
     () => parsePositiveInt(amountInput),
     [amountInput],
   );
+
+  // Switch peta publik (cache lama: boolean UI, bukan rahasia).
+  // Gagal/error dianggap mati: seksi lokasi tidak tampil sama sekali.
+  const config = useQuery({
+    queryKey: ["config"],
+    queryFn: fetchAppConfig,
+    staleTime: Infinity,
+    retry: false,
+  });
+  const mapEnabled = config.data?.mapEnabled === true;
+
+  // Nilai lokasi efektif: toggle mati = tidak ada lokasi yang dikirim.
+  // (Mode Edit: mematikan toggle membiarkan lokasi server apa adanya —
+  //  API tak mendukung penghapusan pin, jadi jangan kirim null.)
+  const effectiveLatitude = locationOn ? latitude : null;
+  const effectiveLongitude = locationOn ? longitude : null;
+  const effectiveLocationName = locationOn ? locationName.trim() : "";
   const visibleCategories = useMemo(
     () => categories.filter((category) => category.kind === kind),
     [categories, kind],
@@ -257,6 +302,9 @@ export function TransactionForm({
       amount !== initial.amount ||
       occurredAtLocal !== initial.occurredAtLocal ||
       note.trim() !== initial.note ||
+      effectiveLatitude !== initial.latitude ||
+      effectiveLongitude !== initial.longitude ||
+      effectiveLocationName !== initial.locationName.trim() ||
       JSON.stringify(currentItems) !== JSON.stringify(initialItems)
     );
   }, [
@@ -267,6 +315,9 @@ export function TransactionForm({
     amount,
     occurredAtLocal,
     note,
+    effectiveLatitude,
+    effectiveLongitude,
+    effectiveLocationName,
     filledItems,
     initial,
   ]);
@@ -304,6 +355,9 @@ export function TransactionForm({
       amount,
       occurredAtIso: parsedDate.toISOString(),
       note: note.trim(),
+      latitude: effectiveLatitude,
+      longitude: effectiveLongitude,
+      locationName: locationOn ? locationName.trim() : "",
       items: itemsError
         ? []
         : filledItems.map((item) => ({
@@ -620,6 +674,68 @@ export function TransactionForm({
             className="min-h-[44px]"
           />
         </div>
+
+        {mapEnabled ? (
+          <fieldset className="flex flex-col gap-2">
+            <div className="flex min-h-[44px] items-center justify-between gap-2">
+              <label
+                htmlFor="tx-location-toggle"
+                className="flex items-center gap-2 text-sm font-medium"
+              >
+                <MapPinIcon size={20} aria-hidden="true" />
+                {strings.locationLabel}
+              </label>
+              <Switch
+                id="tx-location-toggle"
+                aria-label={strings.locationToggleLabel}
+                checked={locationOn}
+                onCheckedChange={setLocationOn}
+              />
+            </div>
+            {locationOn ? (
+              <>
+                <Suspense
+                  fallback={<Skeleton className="h-[240px] rounded-xl" />}
+                >
+                  <LocationPicker
+                    latitude={latitude}
+                    longitude={longitude}
+                    onPick={(lat, lng) => {
+                      setLatitude(lat);
+                      setLongitude(lng);
+                    }}
+                  />
+                </Suspense>
+                {latitude !== null && longitude !== null ? (
+                  <p
+                    aria-live="polite"
+                    className="text-sm text-muted-foreground tabular-nums"
+                  >
+                    {strings.locationCoordsLabel}:{" "}
+                    {formatCoords(latitude, longitude)}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {strings.locationHint}
+                  </p>
+                )}
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="tx-location-name">
+                    {strings.locationNameLabel}
+                  </Label>
+                  <Input
+                    id="tx-location-name"
+                    value={locationName}
+                    onChange={(event) => setLocationName(event.target.value)}
+                    placeholder={strings.locationNamePlaceholder}
+                    maxLength={200}
+                    className="min-h-[44px]"
+                  />
+                </div>
+              </>
+            ) : null}
+          </fieldset>
+        ) : null}
 
         {preview ? (
           <p

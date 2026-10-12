@@ -387,6 +387,34 @@ describe("transactions", () => {
     });
   });
 
+  test("rejects out-of-range coordinates", async () => {
+    const app = createApp();
+    const cookie = await loginCookie(app);
+    for (const coords of [
+      { latitude: 100, longitude: 0 },
+      { latitude: 0, longitude: 200 },
+    ]) {
+      const res = await app.handle(
+        authed("/api/transactions", cookie, {
+          method: "POST",
+          json: {
+            accountId: KNOWN_ID,
+            categoryId: KNOWN_ID,
+            kind: "expense",
+            title: "Koordinat aneh",
+            amount: 10000,
+            occurredAt: new Date().toISOString(),
+            ...coords,
+          },
+        }),
+      );
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({
+        error: { code: "VALIDATION", message: expect.any(String) },
+      });
+    }
+  });
+
   it("returns 404 for an unknown account or category", async () => {
     const app = createApp();
     const cookie = await loginCookie(app);

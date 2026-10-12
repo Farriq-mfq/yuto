@@ -14,6 +14,7 @@ import {
   fetchAccountsSummary,
   fetchCategories,
 } from "../lib/queries";
+import { locationPayload } from "../lib/location";
 import { strings } from "../strings";
 
 export default function Record() {
@@ -43,6 +44,9 @@ export default function Record() {
       occurredAtLocal: nowDateTimeLocalJakarta(),
       note: "",
       items: [],
+      latitude: null,
+      longitude: null,
+      locationName: "",
     }),
     [],
   );
@@ -66,6 +70,12 @@ export default function Record() {
       amount: values.amount,
       occurredAt: values.occurredAtIso,
       ...(values.note === "" ? {} : { note: values.note }),
+      // Lokasi opsional: pin + nama; address tak dikirim terpisah.
+      ...locationPayload({
+        latitude: values.latitude,
+        longitude: values.longitude,
+        locationName: values.locationName,
+      }),
       ...(values.items.length === 0 ? {} : { items: values.items }),
     });
     setPending(false);

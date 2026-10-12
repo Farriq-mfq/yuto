@@ -24,6 +24,9 @@ services:
   api:
     build:
       context: ./apps/api
+      # Default build target is the last stage (development with
+      # --watch). Production must use the lean runtime stage.
+      target: production
     depends_on:
       db:
         condition: service_healthy
@@ -36,7 +39,11 @@ services:
 
   web:
     build:
-      context: ./apps/web
+      context: .
+      dockerfile: apps/web/Dockerfile
+      # Default build target is the last stage (development = vite dev
+      # on :5173). Production must serve the nginx stage on :80.
+      target: production
     depends_on:
       - api
     ports:

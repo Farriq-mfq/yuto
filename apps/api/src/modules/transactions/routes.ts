@@ -30,8 +30,8 @@ const createTransactionBody = t.Object({
   note: t.Optional(t.String()),
   locationName: t.Optional(t.String()),
   address: t.Optional(t.String()),
-  latitude: t.Optional(t.Number()),
-  longitude: t.Optional(t.Number()),
+  latitude: t.Optional(t.Number({ minimum: -90, maximum: 90 })),
+  longitude: t.Optional(t.Number({ minimum: -180, maximum: 180 })),
   items: t.Optional(t.Array(itemBody)),
 });
 
