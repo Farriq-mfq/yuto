@@ -24,7 +24,8 @@ services:
 
   web:
     build:
-      context: ./apps/web
+      context: .
+      dockerfile: apps/web/Dockerfile
       target: development
     command: ["bun", "run", "dev", "--host", "--port", "5173"]
     volumes:
