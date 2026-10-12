@@ -1,4 +1,5 @@
 import {
+  CalendarIcon,
   DeviceDesktopIcon,
   MoonIcon,
   ReceiptIcon,
@@ -6,21 +7,38 @@ import {
 } from "@/icons";
 import { yutoIcon64 } from "@/logo";
 import { useMemo, useState } from "react";
+import { id as localeId } from "react-day-picker/locale";
 import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate } from "react-router-dom";
 import { KindBadge, SignedAmount } from "@/components/SignedAmount";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isUnauthorized } from "../lib/api";
 import {
   currentMonthJakarta,
   dayKeyJakarta,
+  firstDateOfMonthKey,
   formatDayJakarta,
+  formatMonthId,
   formatRupiah,
   formatTimeJakarta,
+  monthKeyFromDate,
 } from "../lib/format";
 import {
   fetchMonthTransactions,
@@ -38,12 +56,12 @@ const filters: Array<{ value: Filter; label: string }> = [
   { value: "income", label: strings.filterIncome },
 ];
 
-/** Ikon + label toggle tema sesuai preferensi aktif (system → light → dark). */
-const themeMeta: Record<ThemePreference, { label: string; Icon: typeof SunIcon }> = {
-  system: { label: strings.themeToggleSystem, Icon: DeviceDesktopIcon },
-  light: { label: strings.themeToggleLight, Icon: SunIcon },
-  dark: { label: strings.themeToggleDark, Icon: MoonIcon },
-};
+/** Ikon + label tiap pilihan tema di menu. */
+const themeOptions = [
+  { value: "system", label: strings.themeSystem, Icon: DeviceDesktopIcon },
+  { value: "light", label: strings.themeLight, Icon: SunIcon },
+  { value: "dark", label: strings.themeDark, Icon: MoonIcon },
+] as const;
 
 interface DayGroup {
   key: string;
@@ -76,9 +94,14 @@ function groupByDay(rows: MonthTransaction[]): DayGroup[] {
 export default function Home() {
   const [month, setMonth] = useState(() => currentMonthJakarta());
   const [filter, setFilter] = useState<Filter>("all");
-  const { preference, isDark, cycle } = useTheme();
-  const theme = themeMeta[preference];
-  const ThemeIcon = theme.Icon;
+  const [monthOpen, setMonthOpen] = useState(false);
+  const { preference, setPreference } = useTheme();
+  const activeTheme =
+    themeOptions.find((option) => option.value === preference) ??
+    themeOptions[0];
+  const ThemeIcon = activeTheme.Icon;
+  const monthDate = firstDateOfMonthKey(month);
+  const monthButtonLabel = formatMonthId(month) ?? month;
 
   // shortcut: ringkasan bulan diagregat client-side dari daftar transaksi
   // bulan ini (tanpa endpoint reports).
@@ -138,27 +161,75 @@ export default function Home() {
         </div>
         <div className="flex w-full min-w-0 items-end gap-2 min-[380px]:w-auto">
           <div className="flex min-w-0 flex-1 flex-col gap-2 min-[380px]:flex-none">
-            <Label htmlFor="month">{strings.monthLabel}</Label>
-            <Input
-              id="month"
-              type="month"
-              value={month}
-              onChange={(event) => setMonth(event.target.value)}
-              className="min-h-[44px] w-full min-w-0 min-[380px]:w-[150px]"
-            />
+            <Label htmlFor="month-button">{strings.monthLabel}</Label>
+            <Popover open={monthOpen} onOpenChange={setMonthOpen}>
+              <PopoverTrigger
+                render={
+                  <Button
+                    id="month-button"
+                    type="button"
+                    variant="outline"
+                    className="min-h-[44px] w-full min-w-0 justify-start font-normal min-[380px]:w-[170px]"
+                  >
+                    <CalendarIcon size={20} aria-hidden="true" />
+                    <span className="truncate">{monthButtonLabel}</span>
+                  </Button>
+                }
+              />
+              <PopoverContent align="start" className="w-auto p-2">
+                <Calendar
+                  mode="single"
+                  locale={localeId}
+                  key={month}
+                  defaultMonth={monthDate ?? new Date()}
+                  selected={
+                    month === currentMonthJakarta() ? new Date() : undefined
+                  }
+                  onSelect={(next) => {
+                    if (!next) return;
+                    setMonth(monthKeyFromDate(next));
+                    setMonthOpen(false);
+                  }}
+                  className="[--cell-size:--spacing(11)]"
+                />
+              </PopoverContent>
+            </Popover>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={cycle}
-            aria-label={theme.label}
-            title={theme.label}
-            aria-pressed={isDark}
-            className="size-11 shrink-0"
-          >
-            <ThemeIcon size={20} aria-hidden="true" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label={strings.themeMenuLabel}
+                  title={strings.themeMenuLabel}
+                  className="size-11 shrink-0"
+                >
+                  <ThemeIcon size={20} aria-hidden="true" />
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="end">
+              <DropdownMenuRadioGroup
+                value={preference}
+                onValueChange={(next) =>
+                  setPreference(next as ThemePreference)
+                }
+              >
+                {themeOptions.map((option) => (
+                  <DropdownMenuRadioItem
+                    key={option.value}
+                    value={option.value}
+                    className="min-h-[44px]"
+                  >
+                    <option.Icon size={20} aria-hidden="true" />
+                    {option.label}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -217,20 +288,25 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          <div role="group" aria-label="Filter" className="mt-4 flex gap-2">
-            {filters.map((option) => (
-              <Button
-                key={option.value}
-                type="button"
-                variant={filter === option.value ? "default" : "secondary"}
-                aria-pressed={filter === option.value}
-                onClick={() => setFilter(option.value)}
-                className="min-h-[44px] flex-1"
-              >
-                {option.label}
-              </Button>
-            ))}
-          </div>
+          <Tabs
+            value={filter}
+            onValueChange={(next) => setFilter(next as Filter)}
+          >
+            <TabsList
+              aria-label={strings.filterLabel}
+              className="h-auto w-full"
+            >
+              {filters.map((option) => (
+                <TabsTrigger
+                  key={option.value}
+                  value={option.value}
+                  className="min-h-[44px] flex-1"
+                >
+                  {option.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
 
           {(list ?? []).length === 0 ? (
             <Card className="mt-4">
