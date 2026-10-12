@@ -12,7 +12,6 @@ export const strings = {
   loginFailed: "Tidak bisa masuk. Periksa koneksi lalu coba lagi.",
   homeTitle: "Beranda",
   monthLabel: "Bulan",
-  monthPickerLabel: "Pilih bulan",
   filterLabel: "Filter transaksi",
   filterAll: "Semua",
   filterExpense: "Keluar",
