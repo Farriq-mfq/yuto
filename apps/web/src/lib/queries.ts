@@ -48,3 +48,31 @@ export async function fetchCategories() {
 }
 
 export type Category = Awaited<ReturnType<typeof fetchCategories>>[number];
+
+export type AccountType = "bank" | "ewallet" | "cash";
+
+/** Satu akun (tanpa saldo terhitung) untuk prefill form ubah. */
+export async function fetchAccount(id: string) {
+  const { data, error } = await api.api.accounts({ id }).get();
+  if (error) throw error;
+  if (isErrorBody(data)) throw data;
+  return data;
+}
+
+export type AccountDetail = NonNullable<
+  Awaited<ReturnType<typeof fetchAccount>>
+>;
+
+/** N transfer terbaru untuk riwayat di layar Transfer. */
+export async function fetchRecentTransfers(limit = 20) {
+  const { data, error } = await api.api.transfers.get({
+    query: { limit: String(limit) },
+  });
+  if (error) throw error;
+  if (isErrorBody(data)) throw data;
+  return data ?? [];
+}
+
+export type TransferItem = Awaited<
+  ReturnType<typeof fetchRecentTransfers>
+>[number];

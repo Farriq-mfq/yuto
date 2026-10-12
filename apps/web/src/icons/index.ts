@@ -5,6 +5,7 @@
  * `@tabler/icons-react` langsung) agar swap library ikon cukup di sini.
  */
 export {
+  IconArrowsLeftRight as TransferIcon,
   IconCalendar as CalendarIcon,
   IconChartBar as ChartBarIcon,
   IconCheck as CheckIcon,
@@ -13,6 +14,8 @@ export {
   IconChevronRight as ChevronRightIcon,
   IconChevronUp as ChevronUpIcon,
   IconDeviceDesktop as DeviceDesktopIcon,
+  IconEye as EyeIcon,
+  IconEyeOff as EyeOffIcon,
   IconHome as HomeIcon,
   IconLock as LockIcon,
   IconMoon as MoonIcon,
