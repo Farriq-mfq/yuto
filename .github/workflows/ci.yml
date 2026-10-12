@@ -32,7 +32,7 @@ jobs:
       YUTO_PASSWORD: ci-only-password-123
       NODE_ENV: test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # shortcut: actions pinned by tag and bun by "latest"; pin to a SHA / exact version if builds must be reproducible
       - uses: oven-sh/setup-bun@v2
         with:
