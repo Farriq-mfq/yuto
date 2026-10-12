@@ -16,6 +16,34 @@ export type MonthTransaction = Awaited<
   ReturnType<typeof fetchMonthTransactions>
 >[number];
 
+/** Transaksi satu hari `YYYY-MM-DD` (zona Asia/Jakarta) untuk layar Activity. */
+export async function fetchDayTransactions(date: string) {
+  const { data, error } = await api.api.transactions.get({
+    query: { date },
+  });
+  if (error) throw error;
+  if (isErrorBody(data)) throw data;
+  return data ?? [];
+}
+
+export type DayTransaction = Awaited<
+  ReturnType<typeof fetchDayTransactions>
+>[number];
+
+/**
+ * Switch konfigurasi publik (`GET /api/config`). Bila `mapEnabled` false,
+ * seksi lokasi disembunyikan total (tanpa request tile OSM).
+ */
+export async function fetchAppConfig() {
+  const { data, error } = await api.api.config.get();
+  if (error) throw error;
+  if (isErrorBody(data)) throw data;
+  if (!data) throw new Error("Konfigurasi kosong.");
+  return data;
+}
+
+export type AppConfig = Awaited<ReturnType<typeof fetchAppConfig>>;
+
 /** Satu transaksi + rincian item; `null` bila sudah tidak ada. */
 export async function fetchTransaction(id: string) {
   const { data, error } = await api.api.transactions({ id }).get();

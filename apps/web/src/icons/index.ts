@@ -18,6 +18,7 @@ export {
   IconEyeOff as EyeOffIcon,
   IconHome as HomeIcon,
   IconLock as LockIcon,
+  IconMapPin as MapPinIcon,
   IconMoon as MoonIcon,
   IconPlus as PlusIcon,
   IconReceipt as ReceiptIcon,

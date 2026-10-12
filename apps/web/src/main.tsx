@@ -9,6 +9,7 @@ import { Shell } from "./App";
 import "./index.css";
 import { applyThemePreference, THEME_STORAGE_KEY } from "./lib/theme";
 import Home from "./pages/Home";
+import Activity from "./pages/Activity";
 import Login from "./pages/Login";
 import AccountEdit from "./pages/AccountEdit";
 import AccountNew from "./pages/AccountNew";
@@ -55,10 +56,7 @@ createRoot(root).render(
               path="/transactions/:id/edit"
               element={<TransactionEdit />}
             />
-            <Route
-              path="/activity"
-              element={<Placeholder title={strings.navActivity} />}
-            />
+            <Route path="/activity" element={<Activity />} />
             <Route
               path="/reports"
               element={<Placeholder title={strings.navReports} />}
