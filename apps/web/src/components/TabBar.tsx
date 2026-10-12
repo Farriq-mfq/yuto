@@ -1,28 +1,28 @@
 import {
-  IconCalendar,
-  IconChartBar,
-  IconHome,
-  IconPlus,
-  IconWallet,
-} from "@tabler/icons-react";
+  CalendarIcon,
+  ChartBarIcon,
+  HomeIcon,
+  PlusIcon,
+  WalletIcon,
+} from "@/icons";
 import { NavLink } from "react-router-dom";
 import { strings } from "../strings";
 
 const tabs = [
-  { to: "/", label: strings.navHome, end: true, icon: IconHome },
-  { to: "/wallet", label: strings.navWallet, end: false, icon: IconWallet },
-  { to: "/record", label: strings.navRecord, end: false, center: true, icon: IconPlus },
-  { to: "/activity", label: strings.navActivity, end: false, icon: IconCalendar },
-  { to: "/reports", label: strings.navReports, end: false, icon: IconChartBar },
+  { to: "/", label: strings.navHome, end: true, icon: HomeIcon },
+  { to: "/wallet", label: strings.navWallet, end: false, icon: WalletIcon },
+  { to: "/record", label: strings.navRecord, end: false, center: true, icon: PlusIcon },
+  { to: "/activity", label: strings.navActivity, end: false, icon: CalendarIcon },
+  { to: "/reports", label: strings.navReports, end: false, icon: ChartBarIcon },
 ];
 
 export function TabBar() {
   return (
     <nav
       aria-label="Navigasi utama"
-      className="fixed bottom-0 left-0 right-0 border-t border-border bg-background"
+      className="fixed bottom-0 left-1/2 w-full max-w-[480px] -translate-x-1/2 border-t border-border bg-background"
     >
-      <div className="mx-auto flex max-w-[480px] items-stretch justify-between px-2 pb-[env(safe-area-inset-bottom)]">
+      <div className="flex w-full items-stretch justify-between px-2 pb-[env(safe-area-inset-bottom)]">
         {tabs.map((tab) => (
           <NavLink
             key={tab.to}
@@ -30,14 +30,14 @@ export function TabBar() {
             end={tab.end}
             aria-label={tab.label}
             className={({ isActive }) =>
-              `flex min-h-[56px] min-w-[44px] flex-1 flex-col items-center justify-center gap-1 rounded-xl text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              `flex min-h-[56px] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-0.5 text-center font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 isActive ? "text-foreground" : "text-muted-foreground"
               }`
             }
           >
             <span
               aria-hidden="true"
-              className={`flex h-8 w-8 items-center justify-center rounded-full ${
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
                 tab.center
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted text-muted-foreground"
@@ -45,7 +45,9 @@ export function TabBar() {
             >
               <tab.icon size={20} strokeWidth={2} />
             </span>
-            {tab.label}
+            <span className="max-w-full whitespace-nowrap text-[11px] leading-tight min-[400px]:text-xs">
+              {tab.label}
+            </span>
           </NavLink>
         ))}
       </div>

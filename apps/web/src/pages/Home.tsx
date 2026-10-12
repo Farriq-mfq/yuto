@@ -1,9 +1,10 @@
 import {
-  IconDeviceDesktop,
-  IconMoon,
-  IconReceipt,
-  IconSun,
-} from "@tabler/icons-react";
+  DeviceDesktopIcon,
+  MoonIcon,
+  ReceiptIcon,
+  SunIcon,
+} from "@/icons";
+import { yutoIcon64 } from "@/logo";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
@@ -26,10 +27,10 @@ const filters: Array<{ value: Filter; label: string }> = [
 ];
 
 /** Ikon + label toggle tema sesuai preferensi aktif (system → light → dark). */
-const themeMeta: Record<ThemePreference, { label: string; Icon: typeof IconSun }> = {
-  system: { label: strings.themeToggleSystem, Icon: IconDeviceDesktop },
-  light: { label: strings.themeToggleLight, Icon: IconSun },
-  dark: { label: strings.themeToggleDark, Icon: IconMoon },
+const themeMeta: Record<ThemePreference, { label: string; Icon: typeof SunIcon }> = {
+  system: { label: strings.themeToggleSystem, Icon: DeviceDesktopIcon },
+  light: { label: strings.themeToggleLight, Icon: SunIcon },
+  dark: { label: strings.themeToggleDark, Icon: MoonIcon },
 };
 
 export default function Home() {
@@ -55,17 +56,26 @@ export default function Home() {
 
   return (
     <main className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="font-display text-xl font-bold">{strings.homeTitle}</h1>
-        <div className="flex items-end gap-2">
-          <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <img
+            src={yutoIcon64}
+            alt={strings.appLogoAlt}
+            width={32}
+            height={32}
+            className="h-8 w-8 shrink-0 rounded-lg"
+          />
+          <h1 className="truncate font-display text-xl font-bold">{strings.homeTitle}</h1>
+        </div>
+        <div className="flex w-full min-w-0 items-end gap-2 min-[380px]:w-auto">
+          <div className="flex min-w-0 flex-1 flex-col gap-2 min-[380px]:flex-none">
             <Label htmlFor="month">{strings.monthLabel}</Label>
             <Input
               id="month"
               type="month"
               value={month}
               onChange={(event) => setMonth(event.target.value)}
-              className="min-h-[44px]"
+              className="min-h-[44px] w-full min-w-0 min-[380px]:w-[150px]"
             />
           </div>
           <Button
@@ -140,7 +150,7 @@ export default function Home() {
                 aria-hidden="true"
                 className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground"
               >
-                <IconReceipt size={24} strokeWidth={2} />
+                <ReceiptIcon size={24} strokeWidth={2} />
               </span>
               <p className="text-base font-semibold">
                 {strings.emptyTransactions}

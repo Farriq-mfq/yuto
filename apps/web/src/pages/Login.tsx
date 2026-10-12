@@ -1,4 +1,4 @@
-import { IconLock } from "@tabler/icons-react";
+import { yutoSvg } from "@/logo";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
@@ -33,15 +33,16 @@ export default function Login() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col justify-center bg-background px-6 pb-16">
+    <main className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col justify-center bg-background px-4 pb-16 pt-8 min-[380px]:px-6">
       <Card>
         <CardHeader>
-          <span
-            aria-hidden="true"
-            className="mb-1 flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground"
-          >
-            <IconLock size={20} strokeWidth={2} />
-          </span>
+          <img
+            src={yutoSvg}
+            alt={strings.appLogoAlt}
+            width={56}
+            height={56}
+            className="mb-1 h-14 w-14 rounded-2xl"
+          />
           <h1 className="font-display text-2xl font-bold">{strings.loginTitle}</h1>
           <CardDescription>{strings.loginSubtitle}</CardDescription>
         </CardHeader>
