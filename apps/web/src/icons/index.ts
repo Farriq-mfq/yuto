@@ -14,5 +14,6 @@ export {
   IconPlus as PlusIcon,
   IconReceipt as ReceiptIcon,
   IconSun as SunIcon,
+  IconTrash as TrashIcon,
   IconWallet as WalletIcon,
 } from "@tabler/icons-react";
