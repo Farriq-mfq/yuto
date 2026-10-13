@@ -1,4 +1,4 @@
-# TRD: Yuto Technical Requirements
+# <img src="../apps/web/src/logo/yuto-icon-64.png" height="28" alt="Logo Yuto"> TRD: Yuto Technical Requirements
 
 Yuto is self-hosted: one operator runs one instance with Docker. Every decision below favors simple install, simple backup, and no outside dependencies.
 

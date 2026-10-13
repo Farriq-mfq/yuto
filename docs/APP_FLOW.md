@@ -1,4 +1,4 @@
-# App Flow
+# <img src="../apps/web/src/logo/yuto-icon-64.png" height="28" alt="Logo Yuto"> App Flow
 
 ## Navigation (bottom tabs)
 Home `/` · Wallet `/wallet` · **Record** `/record` (center button) · Activity `/activity` · Reports `/reports`

@@ -1,4 +1,4 @@
-# Implementation Plan: Yuto
+# <img src="../apps/web/src/logo/yuto-icon-64.png" height="28" alt="Logo Yuto"> Implementation Plan: Yuto
 
 Order matters: each phase ends in something that runs and has tests.
 
