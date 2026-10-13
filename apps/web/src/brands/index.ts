@@ -1,63 +1,117 @@
 /**
- * Peta brand institusi Indonesia ke tile dekoratif kartu akun Dompet.
+ * Peta brand institusi Indonesia ke logo kartu akun Dompet.
  *
- * Semua data lokal/offline: tidak ada logo gambar, tidak ada hotlink/CDN
- * (janji self-host). Tile hanya inisial 1-2 huruf di atas warna brand.
- * Bila institusi tidak dikenal, pemanggil memakai ikon tipe akun
- * (lihat `fallbackIconName`).
+ * Logo bank/e-wallet/e-money: "Indonesian fintech logos by Hafidz Noor
+ * Fauzi (hafidznoor/idn-finlogos), CC BY-NC 4.0,
+ * https://github.com/hafidznoor/idn-finlogos — merek milik pemegangnya
+ * masing-masing. Lisensi aset:
+ * https://creativecommons.org/licenses/by-nc/4.0/ (lihat juga
+ * docs/THIRD_PARTY.md). Hanya slug yang dipakai yang diimpor statis di
+ * file ini sehingga Vite hanya mem-bundle SVG tersebut (aset lokal/offline,
+ * bukan hotlink/CDN — janji self-host terjaga).
+ *
+ * Tunai/cash/dompet tidak punya logo di paket tersebut sehingga tetap
+ * memakai tile inisial dekoratif (`aria-hidden`; makna dibawa oleh nama
+ * akun di sebelahnya). Bila institusi tidak dikenal, pemanggil memakai
+ * ikon tipe akun (lihat `fallbackIconName`).
  */
 
-export interface Brand {
-  /** Inisial 1-2 huruf untuk tile, mis. "BC" untuk BCA. */
-  initials: string;
-  /** Warna latar tile. */
-  background: string;
-  /** Warna teks tile, selalu putih. */
-  foreground: "#fff";
-}
+import bcaUrl from "idn-finlogos/icons/bca.svg";
+import briUrl from "idn-finlogos/icons/bri.svg";
+import bniUrl from "idn-finlogos/icons/bni.svg";
+import mandiriUrl from "idn-finlogos/icons/mandiri.svg";
+import btnUrl from "idn-finlogos/icons/btn.svg";
+import cimbNiagaUrl from "idn-finlogos/icons/cimb-niaga.svg";
+import danamonUrl from "idn-finlogos/icons/danamon.svg";
+import ocbcNispUrl from "idn-finlogos/icons/ocbc-nisp.svg";
+import jagoUrl from "idn-finlogos/icons/jago.svg";
+import jeniusUrl from "idn-finlogos/icons/jenius.svg";
+import bsiUrl from "idn-finlogos/icons/bsi.svg";
+import permataUrl from "idn-finlogos/icons/permata.svg";
+import maybankUrl from "idn-finlogos/icons/maybank.svg";
+import paninbankUrl from "idn-finlogos/icons/paninbank.svg";
+import uobUrl from "idn-finlogos/icons/uob.svg";
+import dbsUrl from "idn-finlogos/icons/dbs.svg";
+import gopayUrl from "idn-finlogos/icons/gopay.svg";
+import ovoUrl from "idn-finlogos/icons/ovo.svg";
+import danaUrl from "idn-finlogos/icons/dana.svg";
+import shopeePayUrl from "idn-finlogos/icons/shopee-pay.svg";
+import linkajaUrl from "idn-finlogos/icons/linkaja.svg";
+import isakuUrl from "idn-finlogos/icons/i-saku.svg";
+import flazzUrl from "idn-finlogos/icons/bca-flazz.svg";
+import brizziUrl from "idn-finlogos/icons/bri-brizzi.svg";
+import emoneyUrl from "idn-finlogos/icons/mandiri-e-money.svg";
+import tapcashUrl from "idn-finlogos/icons/bni-tapcash.svg";
+import jakcardUrl from "idn-finlogos/icons/jakcard.svg";
+
+/** Brand kartu akun: logo gambar atau tile inisial (tunai/cash/dompet). */
+export type Brand =
+  | { kind: "logo"; src: string; label: string }
+  | {
+      kind: "tile";
+      /** Inisial 1-2 huruf untuk tile, mis. "TU" untuk Tunai. */
+      initials: string;
+      /** Warna latar tile. */
+      background: string;
+      /** Warna teks tile, selalu putih. */
+      foreground: "#fff";
+    };
 
 /** Nama ikon fallback per tipe akun (dipetakan ke `@/icons` oleh pemanggil). */
 export type FallbackIconName = "landmark" | "wallet" | "banknote";
 
-// why: warna data brand, bukan token desain — preseden sama seperti dot
-// kategori di Reports. Tile bersifat dekoratif (`aria-hidden`); makna
-// dibawa oleh nama akun di sebelahnya.
-const BRANDS: Record<string, { initials: string; background: string }> = {
+type BrandDef =
+  | { logo: string; label: string }
+  | { initials: string; background: string };
+
+// why: warna tile tunai data brand, bukan token desain — preseden sama
+// seperti dot kategori di Reports.
+const BRANDS: Record<string, BrandDef> = {
   // Bank
-  bca: { initials: "BC", background: "#0B3D91" },
-  bri: { initials: "BR", background: "#0072CE" },
-  bni: { initials: "BN", background: "#F26522" },
-  mandiri: { initials: "MA", background: "#003D79" },
-  btn: { initials: "BT", background: "#005BAA" },
-  cimb: { initials: "CI", background: "#EC1C24" },
-  danamon: { initials: "DA", background: "#009444" },
-  ocbc: { initials: "OC", background: "#E1251B" },
-  jago: { initials: "JA", background: "#A16207" },
-  jenius: { initials: "JE", background: "#0099D8" },
-  bsi: { initials: "BS", background: "#007A5E" },
-  permata: { initials: "PE", background: "#009A93" },
-  maybank: { initials: "MB", background: "#B45309" },
-  panin: { initials: "PA", background: "#0057A8" },
-  uob: { initials: "UO", background: "#002469" },
-  dbs: { initials: "DB", background: "#C41230" },
+  bca: { logo: bcaUrl, label: "BCA" },
+  bri: { logo: briUrl, label: "BRI" },
+  bni: { logo: bniUrl, label: "BNI" },
+  mandiri: { logo: mandiriUrl, label: "Mandiri" },
+  btn: { logo: btnUrl, label: "BTN" },
+  cimb: { logo: cimbNiagaUrl, label: "CIMB Niaga" },
+  danamon: { logo: danamonUrl, label: "Danamon" },
+  ocbc: { logo: ocbcNispUrl, label: "OCBC" },
+  jago: { logo: jagoUrl, label: "Jago" },
+  jenius: { logo: jeniusUrl, label: "Jenius" },
+  bsi: { logo: bsiUrl, label: "BSI" },
+  permata: { logo: permataUrl, label: "Permata" },
+  maybank: { logo: maybankUrl, label: "Maybank" },
+  panin: { logo: paninbankUrl, label: "Panin" },
+  uob: { logo: uobUrl, label: "UOB" },
+  dbs: { logo: dbsUrl, label: "DBS" },
   // E-wallet
-  gopay: { initials: "GP", background: "#00AED6" },
-  ovo: { initials: "OV", background: "#5C2D91" },
-  dana: { initials: "DA", background: "#108EE9" },
-  shopeepay: { initials: "SP", background: "#EE4D2D" },
-  linkaja: { initials: "LA", background: "#DF1F26" },
-  isaku: { initials: "IS", background: "#EA8600" },
+  gopay: { logo: gopayUrl, label: "GoPay" },
+  ovo: { logo: ovoUrl, label: "OVO" },
+  dana: { logo: danaUrl, label: "DANA" },
+  shopeepay: { logo: shopeePayUrl, label: "ShopeePay" },
+  linkaja: { logo: linkajaUrl, label: "LinkAja" },
+  isaku: { logo: isakuUrl, label: "i.saku" },
   // E-money
-  flazz: { initials: "FL", background: "#4338CA" },
-  brizzi: { initials: "BR", background: "#0284C7" },
-  emoney: { initials: "EM", background: "#DC2626" },
-  tapcash: { initials: "TA", background: "#EA580C" },
-  jakcard: { initials: "JK", background: "#BE123C" },
-  // Tunai
+  flazz: { logo: flazzUrl, label: "BCA Flazz" },
+  brizzi: { logo: brizziUrl, label: "BRI BRIZZI" },
+  emoney: { logo: emoneyUrl, label: "Mandiri e-money" },
+  tapcash: { logo: tapcashUrl, label: "BNI TapCash" },
+  jakcard: { logo: jakcardUrl, label: "JakCard" },
+  // Tunai (tetap tile — tidak ada logo di paket)
   tunai: { initials: "TU", background: "#15803D" },
   cash: { initials: "CA", background: "#15803D" },
   dompet: { initials: "DO", background: "#475569" },
 };
+
+function toBrand(def: BrandDef): Brand {
+  if ("logo" in def) return { kind: "logo", src: def.logo, label: def.label };
+  return {
+    kind: "tile",
+    initials: def.initials,
+    background: def.background,
+    foreground: "#fff" as const,
+  };
+}
 
 /** Urutan kunci terpanjang dulu agar pencocokan substring tidak salah arah. */
 const KEYS_LONGEST_FIRST = Object.keys(BRANDS).sort((a, b) => b.length - a.length);
@@ -83,13 +137,13 @@ export function brandFor(institution: string, _type: string): Brand | null {
   const key = normalizeInstitution(institution);
   if (!key) return null;
   const exact = BRANDS[key];
-  if (exact) return { ...exact, foreground: "#fff" as const };
-  // "Bank BCA" tetap dapat tile BCA; kunci terpanjang dicoba dulu supaya
+  if (exact) return toBrand(exact);
+  // "Bank BCA" tetap dapat logo BCA; kunci terpanjang dicoba dulu supaya
   // "brizzi" tidak tertelan "bri".
   for (const candidate of KEYS_LONGEST_FIRST) {
     if (key.includes(candidate)) {
       const found = BRANDS[candidate];
-      return { initials: found.initials, background: found.background, foreground: "#fff" as const };
+      if (found) return toBrand(found);
     }
   }
   return null;

@@ -180,18 +180,28 @@ export default function Wallet() {
                       <CardContent>
                         <div className="flex items-center gap-3">
                           {brand ? (
-                            <span
-                              aria-hidden="true"
-                              // why: warna data brand, bukan token desain —
-                              // lihat src/brands (tile dekoratif, makna di nama akun).
-                              style={{
-                                backgroundColor: brand.background,
-                                color: brand.foreground,
-                              }}
-                              className="flex size-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold"
-                            >
-                              {brand.initials}
-                            </span>
+                            brand.kind === "logo" ? (
+                              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white">
+                                <img
+                                  src={brand.src}
+                                  alt={brand.label}
+                                  className="size-11 object-contain p-1.5"
+                                />
+                              </span>
+                            ) : (
+                              <span
+                                aria-hidden="true"
+                                // why: warna data brand, bukan token desain —
+                                // lihat src/brands (tile dekoratif, makna di nama akun).
+                                style={{
+                                  backgroundColor: brand.background,
+                                  color: brand.foreground,
+                                }}
+                                className="flex size-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold"
+                              >
+                                {brand.initials}
+                              </span>
+                            )
                           ) : (
                             <span
                               aria-hidden="true"

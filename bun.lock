@@ -36,6 +36,7 @@
         "class-variance-authority": "^0.7.1",
         "cn": "^0.4.0",
         "date-fns": "^4.4.0",
+        "idn-finlogos": "^2.5.0",
         "leaflet": "^1.9.4",
         "lucide-react": "^1.55.0",
         "react": "^18.3.1",
@@ -649,6 +650,8 @@
     "human-signals": ["human-signals@8.0.1", "", {}, "sha512-eKCa6bwnJhvxj14kZk5NCPc6Hb6BdsU9DZcOnmQKSnO1VKrfV0zCvtttPZUsBvjmNDn8rpcJfpwSYnHBjc95MQ=="],
 
     "iconv-lite": ["iconv-lite@0.7.3", "", { "dependencies": { "safer-buffer": ">= 2.1.2 < 3.0.0" } }, "sha512-IKXpvIzjnC9XTAUbVBcMfGS0EPaIXtW6v+zr+RRp+hqULEpo0owZax6wyRwPOJbWbzjYspQwusTsfVr0ifh4uQ=="],
+
+    "idn-finlogos": ["idn-finlogos@2.5.0", "", { "peerDependencies": { "react": ">=16.8", "react-native": ">=0.60", "react-native-svg": ">=12.0", "svelte": ">=4.0", "vue": ">=3.0" }, "optionalPeers": ["react", "react-native", "react-native-svg", "svelte", "vue"], "bin": { "idn-finlogos": "bin/idn-finlogos.mjs" } }, "sha512-i9yjfwFRHDi0dr58C7cFqztWOORILHG7+RAPmkwY+2yGLEjMQFXtDUmHpVz/F1Ycvtp0welCRMNOPew56hOWAA=="],
 
     "ieee754": ["ieee754@1.2.1", "", {}, "sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA=="],
 
