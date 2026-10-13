@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { SignedAmount } from "@/components/SignedAmount";
 import { ChevronRightIcon, ReceiptIcon } from "@/icons";
+import { ReportCharts } from "@/components/ReportCharts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -200,6 +201,14 @@ export default function Reports() {
               </CardContent>
             </Card>
           ) : (
+            <>
+            {/* why: chart hanya suplemen dari data yang sama; daftar baris
+                berlabel + persen + SignedAmount di bawah tetap utama. */}
+            <ReportCharts
+              rows={rows}
+              total={kind === "income" ? report.income : report.expense}
+              kind={kind}
+            />
             <Card className="mt-4">
               <CardContent className="gap-0 p-0">
                 {rows.map((category, index) => {
@@ -323,6 +332,7 @@ export default function Reports() {
                 })}
               </CardContent>
             </Card>
+            </>
           )}
         </>
       )}
