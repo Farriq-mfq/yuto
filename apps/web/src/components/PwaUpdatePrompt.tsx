@@ -21,9 +21,10 @@ export function PwaUpdatePrompt() {
 
 function PwaUpdatePromptInner() {
   const { needRefresh, updateServiceWorker } = useRegisterSW();
-  // why: tipe stub dev adalah tuple useState (selalu truthy); boolean
-  // asli hanya ada di build prod. Tuple = stub = jangan tampilkan.
-  const showPrompt = !Array.isArray(needRefresh) && needRefresh;
+  // why: useRegisterSW mengembalikan tuple useState [boolean, setter] —
+  // di dev maupun prod (verifikasi e2e: prod pun tuple). Baca elemen
+  // pertama sebagai boolean; di dev komponen ini tak di-render sama sekali.
+  const showPrompt = Array.isArray(needRefresh) ? needRefresh[0] : needRefresh;
 
   useEffect(() => {
     if (!showPrompt) return;
