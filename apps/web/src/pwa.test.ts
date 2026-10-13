@@ -9,7 +9,7 @@ const read = (rel: string) => readFileSync(join(WEB_ROOT, rel), "utf8");
 describe("PWA manifest (public/manifest.webmanifest)", () => {
   const manifest = JSON.parse(read("public/manifest.webmanifest"));
 
-  test("field wajib sesuai spec Phase 5", () => {
+  test("field wajib sesuai spec Phase 6 (PWA)", () => {
     expect(manifest.name).toBe("Yuto");
     expect(manifest.short_name).toBe("Yuto");
     expect(manifest.start_url).toBe("/");
@@ -82,12 +82,24 @@ describe("strings PWA (Indonesia)", () => {
   });
 });
 
-// Hanya jalan setelah `bun run build` (dist/ ada); di-skip bila belum build.
-const distSw = join(WEB_ROOT, "dist", "sw.js");
-describe.if(existsSync(distSw))("output build service worker (dist/)", () => {
-  const sw = read("dist/sw.js");
+// Hanya bermakna setelah `bun run --cwd apps/web build` (dist/ ada).
+// `describe.if` tidak dipakai: guard di dalam tiap test agar skip-nya
+// eksplisit di semua runner (bun lama mengeksekusi body describe.if!).
+describe("output build service worker (dist/)", () => {
+  const swPath = join(WEB_ROOT, "dist", "sw.js");
+  function readDist(): string | null {
+    if (!existsSync(swPath)) {
+      console.log(
+        "SKIP dist/: build web dulu (`bun run --cwd apps/web build`).",
+      );
+      return null;
+    }
+    return readFileSync(swPath, "utf8");
+  }
 
   test("sw.js + workbox ada", () => {
+    const sw = readDist();
+    if (sw === null) return;
     expect(sw).toContain("precacheAndRoute");
     expect(existsSync(join(WEB_ROOT, "dist", "manifest.webmanifest"))).toBe(
       true,
@@ -95,17 +107,23 @@ describe.if(existsSync(distSw))("output build service worker (dist/)", () => {
   });
 
   test("denylist /api/ ikut ter-build", () => {
+    const sw = readDist();
+    if (sw === null) return;
     // Regex denylist ter-build dalam bentuk escaped: /^\/api\//.
     expect(sw).toContain("\\/api\\/");
   });
 
   test("tidak ada URL /api/ di precache manifest", () => {
+    const sw = readDist();
+    if (sw === null) return;
     const urls = [...sw.matchAll(/\{url:"([^"]+)"/g)].map((m) => m[1]);
     expect(urls.length).toBeGreaterThan(0);
     expect(urls.filter((u) => u.includes("api"))).toEqual([]);
   });
 
   test("tanpa strategi runtime caching", () => {
+    const sw = readDist();
+    if (sw === null) return;
     for (const strategy of [
       "NetworkFirst",
       "StaleWhileRevalidate",
