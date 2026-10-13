@@ -92,3 +92,9 @@ bun test
 ```
 
 Dokumen lanjutan: `docs/PRD.md`, `docs/TRD.md`, `docs/APP_FLOW.md`, `docs/BACKGROUND_SCHEMA.md`, `docs/DESIGN_BRIEF.md`, `docs/THIRD_PARTY.md`, `docs/IMPLEMENTATION_PLAN.md`.
+
+## Lisensi
+
+Kode Yuto berlisensi MIT — lihat `LICENSE`. Logo institusi keuangan
+(`idn-finlogos`) berlisensi CC BY-NC 4.0 dan merek milik pemegangnya
+masing-masing; detailnya di `docs/THIRD_PARTY.md`.
