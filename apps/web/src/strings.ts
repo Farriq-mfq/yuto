@@ -19,6 +19,14 @@ export const strings = {
   netThisMonth: "Net bulan ini",
   monthIncome: "Masuk",
   monthExpense: "Keluar",
+  // Label "Total saldo semua akun" SENGAJA beda dari Wallet "Total saldo"
+  // dan Home "Net bulan ini" (PRD acceptance 5).
+  homeTotalBalance: "Total saldo semua akun",
+  homeIncomeTitle: "Pemasukan bulan ini",
+  homeExpenseTitle: "Pengeluaran bulan ini",
+  weekUp: "naik dari minggu lalu",
+  weekDown: "turun dari minggu lalu",
+  weekFlat: "sama dengan minggu lalu",
   emptyTransactions: "Belum ada transaksi",
   emptyTransactionsHint: "Catat transaksi pertamamu lewat tombol Catat.",
   loading: "Memuat…",
