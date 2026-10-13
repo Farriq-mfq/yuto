@@ -9,7 +9,7 @@ const read = (rel: string) => readFileSync(join(WEB_ROOT, rel), "utf8");
 describe("PWA manifest (public/manifest.webmanifest)", () => {
   const manifest = JSON.parse(read("public/manifest.webmanifest"));
 
-  test("field wajib sesuai spec Phase 5", () => {
+  test("field wajib sesuai spec Phase 6 (PWA)", () => {
     expect(manifest.name).toBe("Yuto");
     expect(manifest.short_name).toBe("Yuto");
     expect(manifest.start_url).toBe("/");
