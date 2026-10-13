@@ -35,11 +35,11 @@ Order matters: each phase ends in something that runs and has tests.
 - [x] Test: report totals equal transaction sums; month boundary at 00:00 Jakarta.
 
 ## Phase 5: Release
-- [ ] Production Dockerfiles verified: `docker compose up --build` from a clean clone.
+- [x] Production Dockerfiles verified: `docker compose up --build` from a clean clone.
 - [x] Playwright smoke: login -> add account -> record -> see on Home -> transfer -> report.
 - [x] Accessibility pass.
 - [x] README: install, HTTPS behind a reverse proxy, backup, restore, upgrade (commands from TRD section 7).
-- [ ] Test the restore: dump from one stack, load into a fresh stack, compare balances.
+- [x] Test the restore: dump from one stack, load into a fresh stack, compare balances.
 
 ## Deferred on purpose
 Budgets, goals, bank sync, receipt scanning, multi-currency, shared wallets, caching balances, prebuilt images on a registry, built-in TLS, multi-instance scaling.
