@@ -36,9 +36,9 @@ Order matters: each phase ends in something that runs and has tests.
 
 ## Phase 5: Release
 - [ ] Production Dockerfiles verified: `docker compose up --build` from a clean clone.
-- [ ] Playwright smoke: login -> add account -> record -> see on Home -> transfer -> report.
-- [ ] Accessibility pass.
-- [ ] README: install, HTTPS behind a reverse proxy, backup, restore, upgrade (commands from TRD section 7).
+- [x] Playwright smoke: login -> add account -> record -> see on Home -> transfer -> report.
+- [x] Accessibility pass.
+- [x] README: install, HTTPS behind a reverse proxy, backup, restore, upgrade (commands from TRD section 7).
 - [ ] Test the restore: dump from one stack, load into a fresh stack, compare balances.
 
 ## Deferred on purpose
