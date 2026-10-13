@@ -34,7 +34,14 @@ Order matters: each phase ends in something that runs and has tests.
 - [x] Reports screen and Home "analysis ready" banner.
 - [x] Test: report totals equal transaction sums; month boundary at 00:00 Jakarta.
 
-## Phase 5: Installable web app (PWA)
+## Phase 5: Release
+- [x] Production Dockerfiles verified: `docker compose up --build` from a clean clone.
+- [x] Playwright smoke: login -> add account -> record -> see on Home -> transfer -> report.
+- [x] Accessibility pass.
+- [x] README: install, HTTPS behind a reverse proxy, backup, restore, upgrade (commands from TRD section 7).
+- [x] Test the restore: dump from one stack, load into a fresh stack, compare balances.
+
+## Phase 6: Installable web app (PWA)
 - [x] App icon files in `apps/web/public/`: 192, 512, maskable 512, 180 (apple-touch-icon), favicon 32/16 and SVG.
 - [x] Web app manifest: name and short name `Yuto`, `start_url: "/"`, `display: "standalone"`, `lang: "id"`, theme and background colors from the design tokens, icons including the maskable one.
 - [x] `index.html`: manifest link, `theme-color` for light and dark, apple-touch-icon, `viewport-fit=cover`; tab bar and screen edges respect `env(safe-area-inset-*)` so nothing hides under the phone's home bar or notch.
@@ -46,7 +53,7 @@ Order matters: each phase ends in something that runs and has tests.
 - [ ] Verify install on real devices: Android Chrome (install prompt), iOS Safari (Share -> Add to Home Screen), desktop Chrome or Edge. Chrome DevTools -> Application -> Manifest shows no errors. Installing needs HTTPS (or `localhost`); a plain-HTTP LAN address cannot install.
 - Done when: the app installs on Android and iOS, opens standalone with the Yuto icon, shows the offline state without stale data, and updates cleanly after a new release.
 
-## Phase 6: Release
+## Phase 7: Release
 - [ ] Production Dockerfiles verified: `docker compose up --build` from a clean clone.
 - [ ] Playwright smoke: login -> add account -> record -> see on Home -> transfer -> report.
 - [ ] Accessibility pass.

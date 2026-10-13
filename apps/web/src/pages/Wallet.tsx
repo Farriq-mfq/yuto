@@ -57,7 +57,11 @@ export default function Wallet() {
     hidden ? strings.balanceHidden : formatRupiah(amount);
 
   return (
-    <main className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5">
+    <main
+      id="konten-utama"
+      tabIndex={-1}
+      className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5"
+    >
       <div className="flex items-center justify-between gap-3">
         <h1 className="font-display text-xl font-bold">{strings.walletTitle}</h1>
         <Button
@@ -244,7 +248,9 @@ export default function Wallet() {
                             <span
                               className={cn(
                                 "text-xs",
-                                branded ? "text-white/70" : "text-muted-foreground",
+                                // why: putih penuh (bukan white/70) agar teks
+                                // 12px di atas gradien brand tetap lolos AA.
+                                branded ? "text-white" : "text-muted-foreground",
                               )}
                             >
                               {account.institution} ·{" "}

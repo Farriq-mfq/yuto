@@ -529,6 +529,11 @@ export function TransactionForm({
                       );
                       setDateOpen(false);
                     }}
+                    // why: label navigasi bawaan Inggris.
+                    labels={{
+                      labelPrevious: () => strings.calendarPrevMonth,
+                      labelNext: () => strings.calendarNextMonth,
+                    }}
                     className="[--cell-size:--spacing(11)]"
                   />
                 </PopoverContent>
@@ -690,6 +695,9 @@ export function TransactionForm({
                 aria-label={strings.locationToggleLabel}
                 checked={locationOn}
                 onCheckedChange={setLocationOn}
+                // why: visual switch hanya 32×18px; padding + margin negatif
+                // memperluas area sentuh ke ≥44px tanpa menggeser layout.
+                className="p-3.5 -m-3.5"
               />
             </div>
             {locationOn ? (

@@ -102,7 +102,11 @@ export default function Reports() {
   );
 
   return (
-    <main className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6">
+    <main
+      id="konten-utama"
+      tabIndex={-1}
+      className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6"
+    >
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-3">
         <h1 className="font-display text-xl font-bold">{strings.reportsTitle}</h1>
         <Input
@@ -162,7 +166,9 @@ export default function Reports() {
                 {strings.netThisMonth}
               </p>
               <p className="mt-1 text-3xl font-bold tabular-nums">
-                {formatRupiah(report.net)}
+                {/* why: net selalu bertanda agar tak mengandalkan warna. */}
+                {report.net < 0 ? "-" : "+"}
+                {formatRupiah(Math.abs(report.net))}
               </p>
               <div className="mt-3 flex gap-4 text-sm tabular-nums">
                 <p>

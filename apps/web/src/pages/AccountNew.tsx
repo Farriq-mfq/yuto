@@ -40,7 +40,11 @@ export default function AccountNew() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5">
+    <main
+      id="konten-utama"
+      tabIndex={-1}
+      className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5"
+    >
       <h1 className="font-display text-xl font-bold">
         {strings.newAccountTitle}
       </h1>

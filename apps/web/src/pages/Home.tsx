@@ -208,7 +208,11 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5">
+<main
+      id="konten-utama"
+      tabIndex={-1}
+      className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5"
+    >
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-3">
         <div className="flex min-w-0 items-center gap-2">
           <img
@@ -249,6 +253,7 @@ export default function Home() {
             <DropdownMenuContent align="end">
               <DropdownMenuRadioGroup
                 value={preference}
+                aria-label={strings.themeMenuLabel}
                 onValueChange={(next) =>
                   setPreference(next as ThemePreference)
                 }
@@ -333,7 +338,9 @@ export default function Home() {
                 {strings.netThisMonth}
               </p>
               <p className="mt-1 text-3xl font-bold tabular-nums">
-                {formatRupiah(totals.net)}
+                {/* why: net selalu bertanda agar tak mengandalkan warna. */}
+                {totals.net < 0 ? "-" : "+"}
+                {formatRupiah(Math.abs(totals.net))}
               </p>
             </CardContent>
           </Card>
