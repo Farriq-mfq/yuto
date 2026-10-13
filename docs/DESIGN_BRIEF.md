@@ -1,4 +1,4 @@
-# Design Brief: Yuto
+# <img src="../apps/web/src/logo/yuto-icon-64.png" height="28" alt="Logo Yuto"> Design Brief: Yuto
 
 Brand: **Yuto**, Javanese for "million". Tone: quiet, personal, trustworthy; it is the user's own server, so avoid cloud or marketing language. Wordmark "Yuto"; no mascot.
 

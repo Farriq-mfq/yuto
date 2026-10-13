@@ -1,4 +1,4 @@
-# Background Schema (PostgreSQL via Drizzle)
+# <img src="../apps/web/src/logo/yuto-icon-64.png" height="28" alt="Logo Yuto"> Background Schema (PostgreSQL via Drizzle)
 
 Location: `apps/api/src/db/schema.ts`
 

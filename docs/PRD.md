@@ -1,4 +1,4 @@
-# PRD: Yuto
+# <img src="../apps/web/src/logo/yuto-icon-64.png" height="28" alt="Logo Yuto"> PRD: Yuto
 
 **Yuto** is a self-hosted money tracker. The name is Javanese for "million" (*juta*).
 You run it on your own server or home machine; your financial data never leaves it.

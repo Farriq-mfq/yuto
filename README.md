@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="apps/web/src/logo/yuto-icon.svg" width="96" height="96" alt="Logo Yuto">
+</p>
+
 # Yuto
 
 Yuto ("juta" dalam bahasa Jawa) adalah pencatat keuangan pribadi yang di-hosting sendiri: satu aplikasi untuk mencatat transaksi, melihat saldo semua akun, dan memahami pengeluaran bulanan per kategori. Satu pengguna (pemilik server), tanpa akun cloud, tanpa langganan, tanpa telemetri.
