@@ -92,7 +92,7 @@ export default function TransactionDetail() {
     tx.data == null;
 
   return (
-    <main className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6">
+    <main className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5">
       <Link
         to="/"
         className="inline-flex min-h-[44px] items-center text-sm font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -104,14 +104,14 @@ export default function TransactionDetail() {
         <div
           aria-busy="true"
           aria-label={strings.loading}
-          className="mt-2 flex flex-col gap-2"
+          className="mt-4 flex flex-col gap-3"
         >
           <Skeleton className="h-32 rounded-2xl" />
           <Skeleton className="h-24 rounded-xl" />
           <Skeleton className="h-24 rounded-xl" />
         </div>
       ) : tx.isError && errorStatus(tx.error) !== 404 ? (
-        <Card className="mt-2">
+        <Card className="mt-4">
           <CardContent className="items-center p-6 text-center">
             <p className="text-sm text-muted-foreground">{strings.loadError}</p>
             <Button
@@ -124,7 +124,7 @@ export default function TransactionDetail() {
           </CardContent>
         </Card>
       ) : notFound || (tx.isError && errorStatus(tx.error) === 404) ? (
-        <Card className="mt-2">
+        <Card className="mt-4">
           <CardContent className="items-center p-8 text-center">
             <p className="text-base font-semibold">
               {strings.transactionNotFound}
@@ -143,7 +143,7 @@ export default function TransactionDetail() {
       ) : (
         tx.data && (
           <>
-            <Card className="mt-2">
+            <Card className="mt-4">
               <CardContent className="items-center p-6 text-center">
                 <KindBadge kind={tx.data.kind} />
                 <h1 className="mt-2 font-display text-xl font-bold">
@@ -157,9 +157,9 @@ export default function TransactionDetail() {
               </CardContent>
             </Card>
 
-            <Card className="mt-4">
+            <Card className="mt-5">
               <CardContent>
-                <dl className="flex flex-col gap-3 text-sm">
+                <dl className="flex flex-col gap-4 text-sm">
                   <div className="flex items-baseline justify-between gap-3">
                     <dt className="text-muted-foreground">
                       {strings.accountLabel}
@@ -234,14 +234,14 @@ export default function TransactionDetail() {
             </Card>
 
             {tx.data.items.length > 0 ? (
-              <Card className="mt-4">
+              <Card className="mt-5">
                 <CardContent>
                   <h2 className="text-sm font-semibold">{strings.itemsLabel}</h2>
                   <ul className="flex flex-col">
                     {tx.data.items.map((item) => (
                       <li
                         key={item.id}
-                        className="flex items-baseline justify-between gap-3 border-t border-border py-2 text-sm first:border-t-0 first:pt-0 last:pb-0"
+                        className="flex items-baseline justify-between gap-3 border-t border-border py-3 text-sm first:border-t-0 first:pt-0 last:pb-0"
                       >
                         <span className="min-w-0">
                           {item.name}{" "}
@@ -265,7 +265,7 @@ export default function TransactionDetail() {
               </p>
             ) : null}
 
-            <div className="mt-4 flex gap-2">
+            <div className="mt-5 flex gap-3">
               <Link
                 to={`/transactions/${tx.data.id}/edit`}
                 className={cn(buttonVariants(), "min-h-[44px] flex-1")}
