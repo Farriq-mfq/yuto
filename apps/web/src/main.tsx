@@ -6,6 +6,8 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Shell } from "./App";
+import { PwaUpdatePrompt } from "./components/PwaUpdatePrompt";
+import { Toaster } from "./components/ui/sonner";
 import "./index.css";
 import { applyThemePreference, THEME_STORAGE_KEY } from "./lib/theme";
 import Home from "./pages/Home";
@@ -41,6 +43,8 @@ createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <PwaUpdatePrompt />
+        <Toaster position="top-center" />
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route element={<Shell />}>
