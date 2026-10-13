@@ -17,6 +17,10 @@ export {
   IconEye as EyeIcon,
   IconEyeOff as EyeOffIcon,
   IconHome as HomeIcon,
+  // @tabler/icons-react 3.49 belum punya IconLandmark / IconBanknote polos;
+  // padanan terdekat: gedung bank klasik (~landmark) & uang kertas (~banknote).
+  IconBuildingBank as LandmarkIcon,
+  IconCashBanknote as BanknoteIcon,
   IconLock as LockIcon,
   IconMapPin as MapPinIcon,
   IconMoon as MoonIcon,
