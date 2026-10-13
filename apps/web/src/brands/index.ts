@@ -16,37 +16,37 @@
  * ikon tipe akun (lihat `fallbackIconName`).
  */
 
-import bcaUrl from "idn-finlogos/icons/bca.svg";
-import briUrl from "idn-finlogos/icons/bri.svg";
-import bniUrl from "idn-finlogos/icons/bni.svg";
-import mandiriUrl from "idn-finlogos/icons/mandiri.svg";
-import btnUrl from "idn-finlogos/icons/btn.svg";
-import cimbNiagaUrl from "idn-finlogos/icons/cimb-niaga.svg";
-import danamonUrl from "idn-finlogos/icons/danamon.svg";
-import ocbcNispUrl from "idn-finlogos/icons/ocbc-nisp.svg";
-import jagoUrl from "idn-finlogos/icons/jago.svg";
-import jeniusUrl from "idn-finlogos/icons/jenius.svg";
-import bsiUrl from "idn-finlogos/icons/bsi.svg";
-import permataUrl from "idn-finlogos/icons/permata.svg";
-import maybankUrl from "idn-finlogos/icons/maybank.svg";
-import paninbankUrl from "idn-finlogos/icons/paninbank.svg";
-import uobUrl from "idn-finlogos/icons/uob.svg";
-import dbsUrl from "idn-finlogos/icons/dbs.svg";
-import gopayUrl from "idn-finlogos/icons/gopay.svg";
-import ovoUrl from "idn-finlogos/icons/ovo.svg";
-import danaUrl from "idn-finlogos/icons/dana.svg";
-import shopeePayUrl from "idn-finlogos/icons/shopee-pay.svg";
-import linkajaUrl from "idn-finlogos/icons/linkaja.svg";
-import isakuUrl from "idn-finlogos/icons/i-saku.svg";
-import flazzUrl from "idn-finlogos/icons/bca-flazz.svg";
-import brizziUrl from "idn-finlogos/icons/bri-brizzi.svg";
-import emoneyUrl from "idn-finlogos/icons/mandiri-e-money.svg";
-import tapcashUrl from "idn-finlogos/icons/bni-tapcash.svg";
-import jakcardUrl from "idn-finlogos/icons/jakcard.svg";
+import bcaSvg from "idn-finlogos/icons/bca";
+import briSvg from "idn-finlogos/icons/bri";
+import bniSvg from "idn-finlogos/icons/bni";
+import mandiriSvg from "idn-finlogos/icons/mandiri";
+import btnSvg from "idn-finlogos/icons/btn";
+import cimbNiagaSvg from "idn-finlogos/icons/cimb-niaga";
+import danamonSvg from "idn-finlogos/icons/danamon";
+import ocbcNispSvg from "idn-finlogos/icons/ocbc-nisp";
+import jagoSvg from "idn-finlogos/icons/jago";
+import jeniusSvg from "idn-finlogos/icons/jenius";
+import bsiSvg from "idn-finlogos/icons/bsi";
+import permataSvg from "idn-finlogos/icons/permata";
+import maybankSvg from "idn-finlogos/icons/maybank";
+import paninbankSvg from "idn-finlogos/icons/paninbank";
+import uobSvg from "idn-finlogos/icons/uob";
+import dbsSvg from "idn-finlogos/icons/dbs";
+import gopaySvg from "idn-finlogos/icons/gopay";
+import ovoSvg from "idn-finlogos/icons/ovo";
+import danaSvg from "idn-finlogos/icons/dana";
+import shopeePaySvg from "idn-finlogos/icons/shopee-pay";
+import linkajaSvg from "idn-finlogos/icons/linkaja";
+import isakuSvg from "idn-finlogos/icons/i-saku";
+import flazzSvg from "idn-finlogos/icons/bca-flazz";
+import brizziSvg from "idn-finlogos/icons/bri-brizzi";
+import emoneySvg from "idn-finlogos/icons/mandiri-e-money";
+import tapcashSvg from "idn-finlogos/icons/bni-tapcash";
+import jakcardSvg from "idn-finlogos/icons/jakcard";
 
-/** Brand kartu akun: logo gambar atau tile inisial (tunai/cash/dompet). */
+/** Brand kartu akun: logo SVG (string markup) atau tile inisial (tunai/cash/dompet). */
 export type Brand =
-  | { kind: "logo"; src: string; label: string }
+  | { kind: "logo"; svg: string; label: string }
   | {
       kind: "tile";
       /** Inisial 1-2 huruf untuk tile, mis. "TU" untuk Tunai. */
@@ -81,35 +81,35 @@ type BrandDef =
 // seperti dot kategori di Reports.
 const BRANDS: Record<string, BrandDef> = {
   // Bank
-  bca: { logo: bcaUrl, label: "BCA" },
-  bri: { logo: briUrl, label: "BRI" },
-  bni: { logo: bniUrl, label: "BNI" },
-  mandiri: { logo: mandiriUrl, label: "Mandiri" },
-  btn: { logo: btnUrl, label: "BTN" },
-  cimb: { logo: cimbNiagaUrl, label: "CIMB Niaga" },
-  danamon: { logo: danamonUrl, label: "Danamon" },
-  ocbc: { logo: ocbcNispUrl, label: "OCBC" },
-  jago: { logo: jagoUrl, label: "Jago" },
-  jenius: { logo: jeniusUrl, label: "Jenius" },
-  bsi: { logo: bsiUrl, label: "BSI" },
-  permata: { logo: permataUrl, label: "Permata" },
-  maybank: { logo: maybankUrl, label: "Maybank" },
-  panin: { logo: paninbankUrl, label: "Panin" },
-  uob: { logo: uobUrl, label: "UOB" },
-  dbs: { logo: dbsUrl, label: "DBS" },
+  bca: { logo: bcaSvg, label: "BCA" },
+  bri: { logo: briSvg, label: "BRI" },
+  bni: { logo: bniSvg, label: "BNI" },
+  mandiri: { logo: mandiriSvg, label: "Mandiri" },
+  btn: { logo: btnSvg, label: "BTN" },
+  cimb: { logo: cimbNiagaSvg, label: "CIMB Niaga" },
+  danamon: { logo: danamonSvg, label: "Danamon" },
+  ocbc: { logo: ocbcNispSvg, label: "OCBC" },
+  jago: { logo: jagoSvg, label: "Jago" },
+  jenius: { logo: jeniusSvg, label: "Jenius" },
+  bsi: { logo: bsiSvg, label: "BSI" },
+  permata: { logo: permataSvg, label: "Permata" },
+  maybank: { logo: maybankSvg, label: "Maybank" },
+  panin: { logo: paninbankSvg, label: "Panin" },
+  uob: { logo: uobSvg, label: "UOB" },
+  dbs: { logo: dbsSvg, label: "DBS" },
   // E-wallet
-  gopay: { logo: gopayUrl, label: "GoPay" },
-  ovo: { logo: ovoUrl, label: "OVO" },
-  dana: { logo: danaUrl, label: "DANA" },
-  shopeepay: { logo: shopeePayUrl, label: "ShopeePay" },
-  linkaja: { logo: linkajaUrl, label: "LinkAja" },
-  isaku: { logo: isakuUrl, label: "i.saku" },
+  gopay: { logo: gopaySvg, label: "GoPay" },
+  ovo: { logo: ovoSvg, label: "OVO" },
+  dana: { logo: danaSvg, label: "DANA" },
+  shopeepay: { logo: shopeePaySvg, label: "ShopeePay" },
+  linkaja: { logo: linkajaSvg, label: "LinkAja" },
+  isaku: { logo: isakuSvg, label: "i.saku" },
   // E-money
-  flazz: { logo: flazzUrl, label: "BCA Flazz" },
-  brizzi: { logo: brizziUrl, label: "BRI BRIZZI" },
-  emoney: { logo: emoneyUrl, label: "Mandiri e-money" },
-  tapcash: { logo: tapcashUrl, label: "BNI TapCash" },
-  jakcard: { logo: jakcardUrl, label: "JakCard" },
+  flazz: { logo: flazzSvg, label: "BCA Flazz" },
+  brizzi: { logo: brizziSvg, label: "BRI BRIZZI" },
+  emoney: { logo: emoneySvg, label: "Mandiri e-money" },
+  tapcash: { logo: tapcashSvg, label: "BNI TapCash" },
+  jakcard: { logo: jakcardSvg, label: "JakCard" },
   // Tunai (tetap tile — tidak ada logo di paket)
   tunai: { initials: "TU", background: "#15803D" },
   cash: { initials: "CA", background: "#15803D" },
@@ -209,7 +209,7 @@ export function listInstitutions(group: InstitutionGroup): BrandOption[] {
 }
 
 function toBrand(def: BrandDef): Brand {
-  if ("logo" in def) return { kind: "logo", src: def.logo, label: def.label };
+  if ("logo" in def) return { kind: "logo", svg: def.logo, label: def.label };
   return {
     kind: "tile",
     initials: def.initials,

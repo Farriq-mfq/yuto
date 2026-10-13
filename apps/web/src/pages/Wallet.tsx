@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate } from "react-router-dom";
 import { cn } from "cn";
+import { Logo } from "idn-finlogos/react";
 import {
   BanknoteIcon,
   EyeIcon,
@@ -182,10 +183,10 @@ export default function Wallet() {
                           {brand ? (
                             brand.kind === "logo" ? (
                               <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white">
-                                <img
-                                  src={brand.src}
-                                  alt={brand.label}
-                                  className="size-11 object-contain p-1.5"
+                                <Logo
+                                  svg={brand.svg}
+                                  size={28}
+                                  title={brand.label}
                                 />
                               </span>
                             ) : (

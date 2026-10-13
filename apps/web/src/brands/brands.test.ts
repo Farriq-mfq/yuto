@@ -31,11 +31,9 @@ describe("brandFor", () => {
   test("brand bank dikenal -> logo", () => {
     const bca = brandFor("BCA", "bank");
     expect(bca).toMatchObject({ kind: "logo", label: "BCA" });
-    expect((bca as { src: string }).src).toMatch(/bca\.svg$/);
+    expect((bca as { svg: string }).svg).toContain("<svg");
     expect(brandFor(" bri ", "bank")).toMatchObject({ kind: "logo" });
-    expect((brandFor(" bri ", "bank") as { src: string }).src).toMatch(
-      /bri\.svg$/,
-    );
+    expect((brandFor(" bri ", "bank") as { svg: string }).svg).toContain("<svg");
     expect(brandFor("B.T.N", "bank")).toMatchObject({
       kind: "logo",
       label: "BTN",
@@ -50,9 +48,7 @@ describe("brandFor", () => {
       kind: "logo",
       label: "BRI BRIZZI",
     });
-    expect((brandFor("BRIZZI", "bank") as { src: string }).src).toMatch(
-      /bri-brizzi\.svg$/,
-    );
+    expect((brandFor("BRIZZI", "bank") as { svg: string }).svg).toContain("<svg");
   });
 
   test("brand e-wallet dikenal -> logo", () => {
@@ -60,9 +56,7 @@ describe("brandFor", () => {
       kind: "logo",
       label: "GoPay",
     });
-    expect((brandFor("GoPay", "ewallet") as { src: string }).src).toMatch(
-      /gopay\.svg$/,
-    );
+    expect((brandFor("GoPay", "ewallet") as { svg: string }).svg).toContain("<svg");
     expect(brandFor("Go-Pay", "ewallet")).toMatchObject({ kind: "logo" });
     expect(brandFor("OVO", "ewallet")).toMatchObject({
       kind: "logo",
@@ -76,17 +70,13 @@ describe("brandFor", () => {
       kind: "logo",
       label: "ShopeePay",
     });
-    expect((brandFor("ShopeePay", "ewallet") as { src: string }).src).toMatch(
-      /shopee-pay\.svg$/,
-    );
+    expect((brandFor("ShopeePay", "ewallet") as { svg: string }).svg).toContain("<svg");
     expect(brandFor("LinkAja", "ewallet")).toMatchObject({
       kind: "logo",
       label: "LinkAja",
     });
     expect(brandFor("ISAKU", "ewallet")).toMatchObject({ kind: "logo" });
-    expect((brandFor("ISAKU", "ewallet") as { src: string }).src).toMatch(
-      /i-saku\.svg$/,
-    );
+    expect((brandFor("ISAKU", "ewallet") as { svg: string }).svg).toContain("<svg");
   });
 
   test("brand e-money dikenal -> logo", () => {
@@ -94,9 +84,7 @@ describe("brandFor", () => {
       kind: "logo",
       label: "BCA Flazz",
     });
-    expect((brandFor("Flazz", "bank") as { src: string }).src).toMatch(
-      /bca-flazz\.svg$/,
-    );
+    expect((brandFor("Flazz", "bank") as { svg: string }).svg).toContain("<svg");
     expect(brandFor("e-Money", "bank")).toMatchObject({
       kind: "logo",
       label: "Mandiri e-money",
