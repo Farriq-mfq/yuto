@@ -79,7 +79,7 @@ export async function getMonthlySummary(month: string): Promise<MonthlySummary> 
   let expense = 0;
   for (const row of rows) {
     if (row.kind === "income") income = row.total;
-    else expense = row.total;
+    else if (row.kind === "expense") expense = row.total;
   }
   return { month, income, expense, net: income - expense };
 }

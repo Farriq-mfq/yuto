@@ -30,9 +30,9 @@ Order matters: each phase ends in something that runs and has tests.
 - [x] Hide balance toggle.
 
 ## Phase 4: Reports
-- [ ] `/reports/summary` and `/reports/categories` with percent and change vs last month.
-- [ ] Reports screen and Home "analysis ready" banner.
-- [ ] Test: report totals equal transaction sums; month boundary at 00:00 Jakarta.
+- [x] `/reports/summary` and `/reports/categories` with percent and change vs last month.
+- [x] Reports screen and Home "analysis ready" banner.
+- [x] Test: report totals equal transaction sums; month boundary at 00:00 Jakarta.
 
 ## Phase 5: Release
 - [ ] Production Dockerfiles verified: `docker compose up --build` from a clean clone.

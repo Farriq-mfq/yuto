@@ -255,7 +255,7 @@ export default function Home() {
               bulan kosong tetap memakai empty state daftar. */}
           {(summary.data ?? []).length > 0 && (
             <Link
-              to="/reports"
+              to={`/reports?month=${month}`}
               className="mt-4 flex min-h-[56px] items-center gap-3 rounded-2xl border border-border bg-card px-4 py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <span

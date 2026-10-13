@@ -1,7 +1,6 @@
 import { and, desc, eq, gte, inArray, lt, type SQL } from "drizzle-orm";
 import { db } from "../../db/client";
 import {
-  JAKARTA_OFFSET_MS,
   JakartaTimeError,
   jakartaDayRange as jakartaDayRangeRaw,
   jakartaMonthRange as jakartaMonthRangeRaw,
@@ -72,8 +71,6 @@ export class TransactionInputError extends Error {
     this.failure = failure;
   }
 }
-
-export { JAKARTA_OFFSET_MS };
 
 // Shared Jakarta helpers live in lib/jakarta-time.ts so every module uses
 // the same UTC+7 conversion. These wrappers translate its error into

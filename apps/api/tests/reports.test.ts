@@ -453,6 +453,44 @@ describe("reports", () => {
     });
   });
 
+  it("rolls the previous month back to december", async () => {
+    const app = createApp();
+    const cookie = await loginCookie(app);
+    const accountId = await createAccount(app, cookie);
+    const categoryId = (await createCategory("expense")).id;
+
+    await createTx(app, cookie, {
+      accountId,
+      categoryId,
+      kind: "expense",
+      title: "Akhir tahun",
+      amount: 40000,
+      occurredAt: "2025-12-20T10:00:00+07:00",
+    });
+    await createTx(app, cookie, {
+      accountId,
+      categoryId,
+      kind: "expense",
+      title: "Tahun baru",
+      amount: 60000,
+      occurredAt: "2026-01-05T10:00:00+07:00",
+    });
+
+    const res = await app.handle(
+      authed("/api/reports/categories?month=2026-01&kind=expense", cookie),
+    );
+    expect(res.status).toBe(200);
+    const rows = (await res.json()) as CategoryRow[];
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      categoryId,
+      total: 60000,
+      percent: 100,
+      previousTotal: 40000,
+      change: 20000,
+    });
+  });
+
   it("ignores transfers in the summary and categories", async () => {
     const app = createApp();
     const cookie = await loginCookie(app);

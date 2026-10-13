@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { SignedAmount } from "@/components/SignedAmount";
 import { ChevronRightIcon, ReceiptIcon } from "@/icons";
 import { Button } from "@/components/ui/button";
@@ -41,7 +41,15 @@ function changeLabel(category: ReportCategory): string {
  * untuk melihat daftar transaksi kategori itu bulan itu, inline.
  */
 export default function Reports() {
-  const [month, setMonth] = useState(() => currentMonthJakarta());
+  // why: banner Home menautkan bulan yang sedang dilihat (?month=);
+  // nilai tak valid diabaikan demi bulan berjalan.
+  const [searchParams] = useSearchParams();
+  const [month, setMonth] = useState(() => {
+    const query = searchParams.get("month") ?? "";
+    return /^(\d{4})-(0[1-9]|1[0-2])$/.test(query)
+      ? query
+      : currentMonthJakarta();
+  });
   const [kind, setKind] = useState<TxKind>("expense");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
