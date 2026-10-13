@@ -186,10 +186,14 @@ export default function Wallet() {
                         branded && "text-white ring-white/20",
                       )}
                       // why: warna kartu data brand (absolut, sama di light
-                      // dan dark), bukan token desain.
+                      // dan dark), bukan token desain. Gradien diturunkan
+                      // dari satu hex via color-mix agar tetap satu sumber
+                      // warna per brand di src/brands.
                       style={
                         branded
-                          ? { backgroundColor: branded.background }
+                          ? {
+                              backgroundImage: `linear-gradient(135deg, ${branded.background}, color-mix(in oklch, ${branded.background}, black 30%))`,
+                            }
                           : undefined
                       }
                     >
