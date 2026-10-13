@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate } from "react-router-dom";
 import { id as localeId } from "react-day-picker/locale";
+import { labelDayButton } from "react-day-picker";
 import { KindBadge, SignedAmount } from "@/components/SignedAmount";
 import { ReceiptIcon } from "@/icons";
 import { Button } from "@/components/ui/button";
@@ -88,7 +89,11 @@ export default function Activity() {
   const heading = selectedDate ? formatDayJakarta(selectedDate) : selected;
 
   return (
-    <main className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5">
+    <main
+      id="konten-utama"
+      tabIndex={-1}
+      className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5"
+    >
       <h1 className="font-display text-xl font-bold">{strings.activityTitle}</h1>
 
       <Card className="mt-5">
@@ -105,6 +110,23 @@ export default function Activity() {
             onSelect={handleSelect}
             modifiers={{ hasTx: markedDays }}
             modifiersClassNames={{ hasTx: "activity-has-tx" }}
+            // why: label navigasi bawaan Inggris; hari bertitik ikut
+            // diumumkan ("ada transaksi") karena dot hanya visual.
+            labels={{
+              labelPrevious: () => strings.calendarPrevMonth,
+              labelNext: () => strings.calendarNextMonth,
+              labelDayButton: (date, modifiers, options, dateLib) => {
+                const base = labelDayButton(
+                  date,
+                  modifiers,
+                  options,
+                  dateLib,
+                );
+                return modifiers.hasTx
+                  ? `${base}, ${strings.calendarHasTx}`
+                  : base;
+              },
+            }}
             className="w-full [--cell-size:--spacing(11)]"
           />
         </CardContent>
@@ -160,7 +182,9 @@ export default function Activity() {
                   {strings.activityNet}
                 </p>
                 <p className="mt-1 text-2xl font-bold tabular-nums">
-                  {formatRupiah(totals.net)}
+                  {/* why: net selalu bertanda agar tak mengandalkan warna. */}
+                  {totals.net < 0 ? "-" : "+"}
+                  {formatRupiah(Math.abs(totals.net))}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm tabular-nums">
                   <p>

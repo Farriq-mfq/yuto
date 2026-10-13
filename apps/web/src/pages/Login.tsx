@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SkipLink } from "../components/SkipLink";
 import { api, errorStatus } from "../lib/api";
 import { strings } from "../strings";
 
@@ -33,7 +34,12 @@ export default function Login() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col justify-center bg-background px-4 pb-16 pt-8 min-[380px]:px-6">
+    <main
+      id="konten-utama"
+      tabIndex={-1}
+      className="mx-auto flex min-h-dvh w-full max-w-[480px] flex-col justify-center bg-background px-4 pb-16 pt-8 min-[380px]:px-6"
+    >
+      <SkipLink />
       <Card>
         <CardHeader>
           <img

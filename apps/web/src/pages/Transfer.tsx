@@ -142,7 +142,11 @@ export default function Transfer() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5">
+    <main
+      id="konten-utama"
+      tabIndex={-1}
+      className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5"
+    >
       <Link
         to="/wallet"
         className="inline-flex min-h-[44px] items-center text-sm font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"

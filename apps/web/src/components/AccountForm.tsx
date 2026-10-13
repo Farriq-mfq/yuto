@@ -287,6 +287,9 @@ export function AccountForm({
           checked={showCategory}
           onCheckedChange={setShowCategory}
           aria-label={strings.showCategoryLabel}
+          // why: visual switch hanya 32×18px; padding + margin negatif
+          // memperluas area sentuh ke ≥44px tanpa menggeser layout.
+          className="p-3.5 -m-3.5"
         />
       </div>
 
