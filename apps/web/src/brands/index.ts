@@ -60,6 +60,19 @@ export type Brand =
 /** Nama ikon fallback per tipe akun (dipetakan ke `@/icons` oleh pemanggil). */
 export type FallbackIconName = "landmark" | "wallet" | "banknote";
 
+/** Kelompok brand: bank / e-wallet / e-money / tunai. */
+export type BrandKind = "bank" | "ewallet" | "emoney" | "cash";
+
+/** Tab tipe akun pemakai opsi institusi (sama dengan `AccountType`). */
+export type InstitutionGroup = "bank" | "ewallet" | "cash";
+
+/** Satu opsi dropdown institusi. */
+export interface BrandOption {
+  key: string;
+  name: string;
+  kind: BrandKind;
+}
+
 type BrandDef =
   | { logo: string; label: string }
   | { initials: string; background: string };
@@ -103,6 +116,98 @@ const BRANDS: Record<string, BrandDef> = {
   dompet: { initials: "DO", background: "#475569" },
 };
 
+/** Kelompok tiap kunci brand (satu kunci = satu kelompok). */
+const BRAND_KINDS: Record<string, BrandKind> = {
+  bca: "bank",
+  bri: "bank",
+  bni: "bank",
+  mandiri: "bank",
+  btn: "bank",
+  cimb: "bank",
+  danamon: "bank",
+  ocbc: "bank",
+  jago: "bank",
+  jenius: "bank",
+  bsi: "bank",
+  permata: "bank",
+  maybank: "bank",
+  panin: "bank",
+  uob: "bank",
+  dbs: "bank",
+  gopay: "ewallet",
+  ovo: "ewallet",
+  dana: "ewallet",
+  shopeepay: "ewallet",
+  linkaja: "ewallet",
+  isaku: "ewallet",
+  flazz: "emoney",
+  brizzi: "emoney",
+  emoney: "emoney",
+  tapcash: "emoney",
+  jakcard: "emoney",
+  tunai: "cash",
+  cash: "cash",
+  dompet: "cash",
+};
+
+/**
+ * Nama proper tiap kunci brand untuk dropdown institusi. E-money memakai
+ * nama produk (bukan nama bank penerbit) agar selaras dengan kartu fisik.
+ */
+export const DISPLAY_NAMES: Record<string, string> = {
+  bca: "BCA",
+  bri: "BRI",
+  bni: "BNI",
+  mandiri: "Bank Mandiri",
+  btn: "BTN",
+  cimb: "CIMB Niaga",
+  danamon: "Danamon",
+  ocbc: "OCBC",
+  jago: "Jago",
+  jenius: "Jenius",
+  bsi: "BSI",
+  permata: "Permata",
+  maybank: "Maybank",
+  panin: "Panin",
+  uob: "UOB",
+  dbs: "DBS",
+  gopay: "GoPay",
+  ovo: "OVO",
+  dana: "DANA",
+  shopeepay: "ShopeePay",
+  linkaja: "LinkAja",
+  isaku: "i.saku",
+  flazz: "Flazz",
+  brizzi: "BRIZZI",
+  emoney: "e-Money",
+  tapcash: "TapCash",
+  jakcard: "JakCard",
+  tunai: "Tunai",
+  cash: "Cash",
+  dompet: "Dompet",
+};
+
+/** Seluruh opsi institusi sesuai urutan definisi (bank, e-wallet, e-money, tunai). */
+export const BRAND_OPTIONS: readonly BrandOption[] = Object.keys(BRANDS).map(
+  (key) => ({ key, name: DISPLAY_NAMES[key], kind: BRAND_KINDS[key] }),
+);
+
+/** Kelompok brand yang tampil per tab tipe akun. */
+const GROUP_KINDS: Record<InstitutionGroup, readonly BrandKind[]> = {
+  bank: ["bank"],
+  ewallet: ["ewallet", "emoney"],
+  cash: ["cash"],
+};
+
+/**
+ * Opsi institusi untuk satu tab tipe akun: bank -> bank saja,
+ * ewallet -> e-wallet + e-money, cash -> tunai saja.
+ */
+export function listInstitutions(group: InstitutionGroup): BrandOption[] {
+  const kinds = GROUP_KINDS[group];
+  return BRAND_OPTIONS.filter((option) => kinds.includes(option.kind));
+}
+
 function toBrand(def: BrandDef): Brand {
   if ("logo" in def) return { kind: "logo", src: def.logo, label: def.label };
   return {
@@ -128,25 +233,33 @@ export function normalizeInstitution(institution: string): string {
 }
 
 /**
+ * Kunci brand yang dikenal untuk sebuah nama institusi, atau `null` bila
+ * tak dikenal. Aturan pencocokan sama dengan `brandFor` (exact dulu, lalu
+ * substring terpanjang dulu) agar prefill form selalu konsisten dengan
+ * logo yang tampil di kartu.
+ */
+export function brandKeyFor(institution: string): string | null {
+  const key = normalizeInstitution(institution);
+  if (!key) return null;
+  if (BRANDS[key]) return key;
+  // "Bank BCA" tetap dapat logo BCA; kunci terpanjang dicoba dulu supaya
+  // "brizzi" tidak tertelan "bri".
+  for (const candidate of KEYS_LONGEST_FIRST) {
+    if (key.includes(candidate)) return candidate;
+  }
+  return null;
+}
+
+/**
  * Brand untuk pasangan institusi + tipe akun, atau `null` bila tak dikenal
  * (pemanggil memakai ikon fallback per tipe). `type` diterima sebagai string
  * bebas agar tipe asing tidak membuat fungsi ini crash; pencocokan brand
  * sendiri tidak bergantung pada tipe.
  */
 export function brandFor(institution: string, _type: string): Brand | null {
-  const key = normalizeInstitution(institution);
+  const key = brandKeyFor(institution);
   if (!key) return null;
-  const exact = BRANDS[key];
-  if (exact) return toBrand(exact);
-  // "Bank BCA" tetap dapat logo BCA; kunci terpanjang dicoba dulu supaya
-  // "brizzi" tidak tertelan "bri".
-  for (const candidate of KEYS_LONGEST_FIRST) {
-    if (key.includes(candidate)) {
-      const found = BRANDS[candidate];
-      if (found) return toBrand(found);
-    }
-  }
-  return null;
+  return toBrand(BRANDS[key]);
 }
 
 /**
