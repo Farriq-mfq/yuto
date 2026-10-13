@@ -44,9 +44,20 @@ import emoneySvg from "idn-finlogos/icons/mandiri-e-money";
 import tapcashSvg from "idn-finlogos/icons/bni-tapcash";
 import jakcardSvg from "idn-finlogos/icons/jakcard";
 
-/** Brand kartu akun: logo SVG (string markup) atau tile inisial (tunai/cash/dompet). */
+/** Brand kartu akun: logo SVG (string markup) + warna kartu, atau tile inisial (tunai/cash/dompet). */
 export type Brand =
-  | { kind: "logo"; svg: string; label: string }
+  | {
+      kind: "logo";
+      svg: string;
+      label: string;
+      /**
+       * Warna latar kartu akun (data brand, bukan token desain —
+       * preseden sama seperti dot kategori di Reports). Selalu gelap
+       * agar teks putih di atasnya lolos kontras AA (lihat test
+       * `brandCardBackground`); tile logo tetap putih.
+       */
+      background: string;
+    }
   | {
       kind: "tile";
       /** Inisial 1-2 huruf untuk tile, mis. "TU" untuk Tunai. */
@@ -74,42 +85,54 @@ export interface BrandOption {
 }
 
 type BrandDef =
-  | { logo: string; label: string }
+  | { logo: string; label: string; background: string }
   | { initials: string; background: string };
 
-// why: warna tile tunai data brand, bukan token desain — preseden sama
-// seperti dot kategori di Reports.
+// why: warna kartu + tile tunai data brand, bukan token desain — preseden
+// sama seperti dot kategori di Reports. Latar kartu logo selalu versi
+// gelap warna brand agar teks putih lolos kontras AA (4.5:1); oranye BNI
+// asli (#F26522), kuning Maybank, dan merah/oranye terang lain digelapkan
+// atau diganti hitam/abu gelap dengan catatan di bawah.
 const BRANDS: Record<string, BrandDef> = {
   // Bank
-  bca: { logo: bcaSvg, label: "BCA" },
-  bri: { logo: briSvg, label: "BRI" },
-  bni: { logo: bniSvg, label: "BNI" },
-  mandiri: { logo: mandiriSvg, label: "Mandiri" },
-  btn: { logo: btnSvg, label: "BTN" },
-  cimb: { logo: cimbNiagaSvg, label: "CIMB Niaga" },
-  danamon: { logo: danamonSvg, label: "Danamon" },
-  ocbc: { logo: ocbcNispSvg, label: "OCBC" },
-  jago: { logo: jagoSvg, label: "Jago" },
-  jenius: { logo: jeniusSvg, label: "Jenius" },
-  bsi: { logo: bsiSvg, label: "BSI" },
-  permata: { logo: permataSvg, label: "Permata" },
-  maybank: { logo: maybankSvg, label: "Maybank" },
-  panin: { logo: paninbankSvg, label: "Panin" },
-  uob: { logo: uobSvg, label: "UOB" },
-  dbs: { logo: dbsSvg, label: "DBS" },
+  bca: { logo: bcaSvg, label: "BCA", background: "#0B3D91" },
+  bri: { logo: briSvg, label: "BRI", background: "#00529C" },
+  // BNI oranye (#F26522) gagal AA dengan teks putih -> oranye gelap.
+  bni: { logo: bniSvg, label: "BNI", background: "#9A3412" },
+  mandiri: { logo: mandiriSvg, label: "Mandiri", background: "#003D79" },
+  btn: { logo: btnSvg, label: "BTN", background: "#0066B3" },
+  cimb: { logo: cimbNiagaSvg, label: "CIMB Niaga", background: "#C41E2F" },
+  // Danamon memakai hijau gelap (elemen hijau di logonya); oranye terang
+  // logonya tidak lolos kontras AA.
+  danamon: { logo: danamonSvg, label: "Danamon", background: "#166534" },
+  ocbc: { logo: ocbcNispSvg, label: "OCBC", background: "#B91C1C" },
+  jago: { logo: jagoSvg, label: "Jago", background: "#1E3A8A" },
+  jenius: { logo: jeniusSvg, label: "Jenius", background: "#0369A1" },
+  bsi: { logo: bsiSvg, label: "BSI", background: "#0F766E" },
+  permata: { logo: permataSvg, label: "Permata", background: "#991B1B" },
+  // Kuning Maybank tidak lolos AA dengan teks putih -> hitam khas brand.
+  maybank: { logo: maybankSvg, label: "Maybank", background: "#1F2937" },
+  panin: { logo: paninbankSvg, label: "Panin", background: "#1D4ED8" },
+  uob: { logo: uobSvg, label: "UOB", background: "#002469" },
+  dbs: { logo: dbsSvg, label: "DBS", background: "#111827" },
   // E-wallet
-  gopay: { logo: gopaySvg, label: "GoPay" },
-  ovo: { logo: ovoSvg, label: "OVO" },
-  dana: { logo: danaSvg, label: "DANA" },
-  shopeepay: { logo: shopeePaySvg, label: "ShopeePay" },
-  linkaja: { logo: linkajaSvg, label: "LinkAja" },
-  isaku: { logo: isakuSvg, label: "i.saku" },
+  gopay: { logo: gopaySvg, label: "GoPay", background: "#0E7490" },
+  ovo: { logo: ovoSvg, label: "OVO", background: "#6B21A8" },
+  dana: { logo: danaSvg, label: "DANA", background: "#075985" },
+  shopeepay: {
+    logo: shopeePaySvg,
+    label: "ShopeePay",
+    background: "#C2410C",
+  },
+  linkaja: { logo: linkajaSvg, label: "LinkAja", background: "#BE123C" },
+  isaku: { logo: isakuSvg, label: "i.saku", background: "#0C4A6E" },
   // E-money
-  flazz: { logo: flazzSvg, label: "BCA Flazz" },
-  brizzi: { logo: brizziSvg, label: "BRI BRIZZI" },
-  emoney: { logo: emoneySvg, label: "Mandiri e-money" },
-  tapcash: { logo: tapcashSvg, label: "BNI TapCash" },
-  jakcard: { logo: jakcardSvg, label: "JakCard" },
+  flazz: { logo: flazzSvg, label: "BCA Flazz", background: "#1E40AF" },
+  brizzi: { logo: brizziSvg, label: "BRI BRIZZI", background: "#004E9E" },
+  emoney: { logo: emoneySvg, label: "Mandiri e-money", background: "#B45309" },
+  // Satu keluarga brand BNI -> sama dengan kartu BNI.
+  tapcash: { logo: tapcashSvg, label: "BNI TapCash", background: "#9A3412" },
+  jakcard: { logo: jakcardSvg, label: "JakCard", background: "#7F1D1D" },
   // Tunai (tetap tile — tidak ada logo di paket)
   tunai: { initials: "TU", background: "#15803D" },
   cash: { initials: "CA", background: "#15803D" },
@@ -209,7 +232,13 @@ export function listInstitutions(group: InstitutionGroup): BrandOption[] {
 }
 
 function toBrand(def: BrandDef): Brand {
-  if ("logo" in def) return { kind: "logo", svg: def.logo, label: def.label };
+  if ("logo" in def)
+    return {
+      kind: "logo",
+      svg: def.logo,
+      label: def.label,
+      background: def.background,
+    };
   return {
     kind: "tile",
     initials: def.initials,

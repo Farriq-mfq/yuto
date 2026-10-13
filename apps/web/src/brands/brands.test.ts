@@ -244,3 +244,57 @@ describe("brandKeyFor", () => {
     }
   });
 });
+
+describe("brandCardBackground", () => {
+  /** Luminansi relatif WCAG untuk hex #rrggbb. */
+  function luminance(hex: string): number {
+    const [r, g, b] = [hex.slice(1, 3), hex.slice(3, 5), hex.slice(5, 7)].map(
+      (part) => {
+        const channel = parseInt(part, 16) / 255;
+        return channel <= 0.03928
+          ? channel / 12.92
+          : Math.pow((channel + 0.055) / 1.055, 2.4);
+      },
+    );
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  }
+
+  /** Rasio kontras WCAG dua warna hex. */
+  function contrast(a: string, b: string): number {
+    const [lighter, darker] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+    return (lighter + 0.05) / (darker + 0.05);
+  }
+
+  test("27 brand logo punya background hex valid", () => {
+    const logos = BRAND_OPTIONS.flatMap((option) => {
+      const brand = brandFor(option.name, option.kind);
+      return brand?.kind === "logo" ? [{ option, brand }] : [];
+    });
+    expect(logos).toHaveLength(27);
+    for (const { option, brand } of logos) {
+      expect(
+        brand.background,
+        `background ${option.key} harus hex #rrggbb`,
+      ).toMatch(/^#[0-9A-Fa-f]{6}$/);
+    }
+  });
+
+  test("background kartu kontras AA (4.5:1) dengan teks putih", () => {
+    for (const option of BRAND_OPTIONS) {
+      const brand = brandFor(option.name, option.kind);
+      if (brand?.kind !== "logo") continue;
+      expect(
+        contrast(brand.background, "#ffffff"),
+        `kontras ${option.key} (${brand.background}) vs putih harus >= 4.5`,
+      ).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  test("brand tunai tetap tile (kartu default, bukan kartu berwarna)", () => {
+    for (const key of ["tunai", "cash", "dompet"]) {
+      expect(brandFor(DISPLAY_NAMES[key], "cash")).toMatchObject({
+        kind: "tile",
+      });
+    }
+  });
+});

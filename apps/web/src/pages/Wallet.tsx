@@ -170,6 +170,9 @@ export default function Wallet() {
                 const brand = brandFor(account.institution, account.type);
                 const FallbackIcon =
                   FALLBACK_ICONS[fallbackIconName(account.type)];
+                // Kartu berwarna hanya untuk brand berlogo; tile tunai dan
+                // ikon fallback tetap memakai kartu default.
+                const branded = brand?.kind === "logo" ? brand : null;
                 return (
                   <Link
                     key={account.id}
@@ -177,7 +180,19 @@ export default function Wallet() {
                     aria-label={account.name}
                     className="block min-h-[44px] rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    <Card className="rounded-2xl">
+                    <Card
+                      className={cn(
+                        "rounded-2xl",
+                        branded && "text-white ring-white/20",
+                      )}
+                      // why: warna kartu data brand (absolut, sama di light
+                      // dan dark), bukan token desain.
+                      style={
+                        branded
+                          ? { backgroundColor: branded.background }
+                          : undefined
+                      }
+                    >
                       <CardContent>
                         <div className="flex items-center gap-3">
                           {brand ? (
@@ -187,6 +202,13 @@ export default function Wallet() {
                                   svg={brand.svg}
                                   size={28}
                                   title={brand.label}
+                                  // why: idn-finlogos me-render span
+                                  // inline-block berisi <svg> tanpa
+                                  // width/height (hanya viewBox) sehingga
+                                  // svg melebar melewati wrapper 28px;
+                                  // paksa svg pas 28px + meet (aspect
+                                  // terjaga, terpusat) di tengah tile 44px.
+                                  className="flex items-center justify-center [&_svg]:block [&_svg]:h-7 [&_svg]:w-7"
                                 />
                               </span>
                             ) : (
@@ -215,15 +237,23 @@ export default function Wallet() {
                             <span className="truncate text-sm font-bold">
                               {account.name}
                             </span>
-                            <span className="text-xs text-muted-foreground">
+                            <span
+                              className={cn(
+                                "text-xs",
+                                branded ? "text-white/70" : "text-muted-foreground",
+                              )}
+                            >
                               {account.institution} ·{" "}
                               {typeLabel(account.type)}
                             </span>
                           </span>
                           {account.showCategory ? (
                             <Badge
-                              variant="secondary"
-                              className="shrink-0"
+                              variant={branded ? "outline" : "secondary"}
+                              className={cn(
+                                "shrink-0",
+                                branded && "border-white/40 text-white",
+                              )}
                             >
                               {account.category}
                             </Badge>
