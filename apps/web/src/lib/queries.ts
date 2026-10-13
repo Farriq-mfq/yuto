@@ -104,3 +104,30 @@ export async function fetchRecentTransfers(limit = 20) {
 export type TransferItem = Awaited<
   ReturnType<typeof fetchRecentTransfers>
 >[number];
+
+/** Ringkasan bulan (masuk/keluar/net) untuk layar Reports. */
+export async function fetchReportSummary(month: string) {
+  const { data, error } = await api.api.reports.summary.get({
+    query: { month },
+  });
+  if (error) throw error;
+  if (isErrorBody(data)) throw data;
+  if (!data) throw new Error("Ringkasan laporan kosong.");
+  return data;
+}
+
+export type ReportSummary = Awaited<ReturnType<typeof fetchReportSummary>>;
+
+/** Rincian per kategori untuk layar Reports. */
+export async function fetchReportCategories(month: string, kind: TxKind) {
+  const { data, error } = await api.api.reports.categories.get({
+    query: { month, kind },
+  });
+  if (error) throw error;
+  if (isErrorBody(data)) throw data;
+  return data ?? [];
+}
+
+export type ReportCategory = Awaited<
+  ReturnType<typeof fetchReportCategories>
+>[number];

@@ -1,4 +1,6 @@
 import {
+  ChartBarIcon,
+  ChevronRightIcon,
   DeviceDesktopIcon,
   MinusIcon,
   MoonIcon,
@@ -358,6 +360,34 @@ export default function Home() {
               </CardContent>
             </Card>
           </div>
+
+          {/* why: banner hanya bila bulan tampil punya >=1 transaksi;
+              bulan kosong tetap memakai empty state daftar. */}
+          {(summary.data ?? []).length > 0 && (
+            <Link
+              to={`/reports?month=${month}`}
+              className="mt-5 flex min-h-[56px] items-center gap-3 rounded-2xl border border-border bg-card px-4 py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span
+                aria-hidden="true"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
+              >
+                <ChartBarIcon size={20} strokeWidth={2} />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-sm font-semibold">
+                  {strings.analysisReadyTitle}
+                </span>
+                <span className="truncate text-xs text-muted-foreground">
+                  {strings.analysisReadyHint}
+                </span>
+              </span>
+              <span className="flex shrink-0 items-center gap-1 text-sm font-medium text-primary">
+                {strings.viewAnalysis}
+                <ChevronRightIcon size={20} aria-hidden="true" />
+              </span>
+            </Link>
+          )}
 
           <Tabs
             value={filter}

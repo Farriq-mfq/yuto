@@ -2,9 +2,9 @@ import { and, desc, eq, gte, lt, or, type SQL } from "drizzle-orm";
 import { db } from "../../db/client";
 import { accounts, transfers } from "../../db/schema";
 import {
+  JakartaTimeError,
   jakartaMonthRange,
-  TransactionInputError as TransactionValidationError,
-} from "../transactions/service";
+} from "../../lib/jakarta-time";
 
 export type Transfer = typeof transfers.$inferSelect;
 
@@ -50,7 +50,7 @@ export async function listTransfers(
     try {
       ({ start, end } = jakartaMonthRange(filter.month));
     } catch (err) {
-      if (err instanceof TransactionValidationError) {
+      if (err instanceof JakartaTimeError) {
         throw new TransferInputError(
           "invalid-month",
           "Format bulan tidak valid. Gunakan YYYY-MM.",
