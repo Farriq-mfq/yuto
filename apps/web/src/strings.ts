@@ -179,6 +179,10 @@ export const strings = {
   deleteTransferTitle: "Hapus transfer?",
   deleteTransferConfirm:
     "Transfer ini akan dihapus (koreksi) dan kedua saldo ikut berubah. Lanjut?",
+  updateAvailableTitle: "Versi baru tersedia",
+  updateAvailableHint: "Muat ulang untuk memakai versi terbaru Yuto.",
+  updateReload: "Muat ulang",
+  offlineMessage: "Sedang offline — data yang tampil mungkin tidak terbaru.",
 } as const;
 
 export type Strings = typeof strings;

@@ -1,6 +1,7 @@
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
 
 // Minimal Node typing for this config file (avoids an @types/node dependency).
 declare const process: { env: Record<string, string | undefined> };
@@ -10,7 +11,38 @@ declare const process: { env: Record<string, string | undefined> };
 const apiTarget = process.env.VITE_PROXY_TARGET ?? "http://localhost:3000";
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    VitePWA({
+      // Prompt mode: versi baru TIDAK ditukar diam-diam; user menekan
+      // "Muat ulang" di toast (PwaUpdatePrompt) → skipWaiting + reload.
+      registerType: "prompt",
+      // Registrasi manual via `virtual:pwa-register` agar bisa prompt.
+      injectRegister: false,
+      // Manifest dipelihara sebagai file terpisah agar bisa divalidasi
+      // langsung: public/manifest.webmanifest.
+      manifest: false,
+      workbox: {
+        // Precache HANYA app shell + font ter-bundle (woff2 dari
+        // Fontsource ikut karena pola ini). Tidak ada runtimeCaching:
+        // /api/* (data keuangan) dan tile OSM tidak pernah di-cache.
+        globPatterns: [
+          "**/*.{js,css,html,ico,png,svg,webmanifest,woff,woff2}",
+        ],
+        // Bundle utama ~10 MB (leaflet + recharts + subset font, bawaan
+        // sebelum PWA) sehingga butuh di atas default workbox 2 MiB agar
+        // app shell tetap ter-precache.
+        maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
+        // Navigasi SPA fallback ke index.html, kecuali request API.
+        navigateFallbackDenylist: [/^\/api\//],
+        cleanupOutdatedCaches: true,
+      },
+      devOptions: {
+        enabled: false,
+      },
+    }),
+  ],
   resolve: {
     alias: {
       // file:// URL pathname avoids a node:path import (no @types/node here).
