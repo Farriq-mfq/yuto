@@ -8,12 +8,25 @@ import { strings } from "../strings";
  * tampilkan toast Sonner "Versi baru tersedia" + aksi Muat ulang
  * (skipWaiting + reload). Tanpa penukaran diam-diam di tengah mengedit.
  * Sonner me-render toast di live region (aria-live) bawaannya.
+ *
+ * why: tidak di-render di vite dev — di sana tidak ada service worker
+ * (devOptions.enabled=false) dan stub dev useRegisterSW mengembalikan
+ * tuple useState (selalu truthy!) dengan updateServiceWorker no-op,
+ * sehingga tanpa guard ini toast muncul terus dan tombolnya tak berguna.
  */
 export function PwaUpdatePrompt() {
+  if (import.meta.env.DEV) return null;
+  return <PwaUpdatePromptInner />;
+}
+
+function PwaUpdatePromptInner() {
   const { needRefresh, updateServiceWorker } = useRegisterSW();
+  // why: tipe stub dev adalah tuple useState (selalu truthy); boolean
+  // asli hanya ada di build prod. Tuple = stub = jangan tampilkan.
+  const showPrompt = !Array.isArray(needRefresh) && needRefresh;
 
   useEffect(() => {
-    if (!needRefresh) return;
+    if (!showPrompt) return;
     toast.warning(strings.updateAvailableTitle, {
       id: "yuto-update-available",
       description: strings.updateAvailableHint,
@@ -26,7 +39,7 @@ export function PwaUpdatePrompt() {
     return () => {
       toast.dismiss("yuto-update-available");
     };
-  }, [needRefresh, updateServiceWorker]);
+  }, [showPrompt, updateServiceWorker]);
 
   return null;
 }
