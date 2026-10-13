@@ -92,7 +92,10 @@ export default function Activity() {
       <h1 className="font-display text-xl font-bold">{strings.activityTitle}</h1>
 
       <Card className="mt-5">
-        <CardContent className="flex justify-center p-4 sm:p-5">
+        {/* why: kalender full-width (w-full menimpa w-fit bawaan);
+            sel hari flex sehingga mengisi kolom, min 44px dipertahankan
+            oleh min-w-(--cell-size) di tombol hari. */}
+        <CardContent className="p-4 sm:p-5">
           <Calendar
             mode="single"
             locale={localeId}
@@ -102,7 +105,7 @@ export default function Activity() {
             onSelect={handleSelect}
             modifiers={{ hasTx: markedDays }}
             modifiersClassNames={{ hasTx: "activity-has-tx" }}
-            className="[--cell-size:--spacing(11)]"
+            className="w-full [--cell-size:--spacing(11)]"
           />
         </CardContent>
       </Card>
