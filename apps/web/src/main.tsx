@@ -1,7 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
-import "@fontsource-variable/inter";
-import "@fontsource-variable/source-serif-4";
+import "@fontsource-variable/plus-jakarta-sans";
 import "@fontsource/ibm-plex-mono";
 import { StrictMode, Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
