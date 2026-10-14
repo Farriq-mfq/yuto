@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   ErrorIcon,
   InfoIcon,
@@ -16,6 +17,7 @@ import {
 } from "@/icons";
 import { isUnauthorized } from "../lib/datasource";
 import { api, errorStatus } from "../lib/api";
+import { useOnline } from "../hooks/useOnline";
 import type { DeviceInfo } from "../../../api/src/modules/sync/service";
 import type {
   PairingSituation,
@@ -24,6 +26,12 @@ import type {
 } from "../lib/sync/syncEngine";
 import { useSyncClient } from "../lib/sync/syncContext";
 import { useSyncStatus, syncStatus } from "../lib/sync/syncStatus";
+import { normalizeServerUrl } from "../lib/sync/serverUrl";
+import {
+  canSync,
+  loadSyncEnabled,
+  saveSyncEnabled,
+} from "../lib/sync/syncPrefs";
 import { strings } from "../strings";
 
 export default function Sync() {
@@ -46,6 +54,7 @@ function formatSyncTime(iso: string): string {
 
 function NativeSyncView({ client }: { client: SyncClient }) {
   const status = useSyncStatus();
+  const online = useOnline();
   const [paired, setPaired] = useState<{
     serverUrl: string;
     deviceName: string;
@@ -55,10 +64,15 @@ function NativeSyncView({ client }: { client: SyncClient }) {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [situation, setSituation] = useState<PairingSituation | null>(null);
   const [lastResult, setLastResult] = useState<SyncResult | null>(null);
   const [confirmUnpair, setConfirmUnpair] = useState(false);
   const [confirmReplace, setConfirmReplace] = useState(false);
+  const [syncEnabled, setSyncEnabled] = useState(false);
+  const [editingUrl, setEditingUrl] = useState(false);
+  const [draftUrl, setDraftUrl] = useState("");
+  const [urlError, setUrlError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,14 +88,45 @@ function NativeSyncView({ client }: { client: SyncClient }) {
     };
   }, [client]);
 
+  useEffect(() => {
+    let cancelled = false;
+    void loadSyncEnabled().then((value) => {
+      if (!cancelled) setSyncEnabled(value);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   function fail(error: unknown) {
     setMessage(error instanceof Error ? error.message : strings.syncFailed);
+  }
+
+  // why: pairing sukses = opt-in EKSPLISIT yang menyalakan sinkronisasi
+  // (default pref MATI). Pref ditulis di lapisan UI ini — engine
+  // (pairAndDetect) SENGAJA tak diubah.
+  async function enableSyncPref() {
+    setSyncEnabled(true);
+    await saveSyncEnabled(true);
+  }
+
+  // why: putus tautan (batal/lepas) = sinkron ikut mati; user menyalakan
+  // lagi bila menautkan ulang.
+  async function disableSyncPref() {
+    setSyncEnabled(false);
+    await saveSyncEnabled(false);
+  }
+
+  async function onToggleSync(next: boolean) {
+    setSyncEnabled(next);
+    await saveSyncEnabled(next);
   }
 
   async function runSync() {
     if (busy) return;
     setBusy(true);
     setMessage(null);
+    setNotice(null);
     syncStatus.setSyncing(true);
     try {
       const result = await client.syncNow();
@@ -102,6 +147,7 @@ function NativeSyncView({ client }: { client: SyncClient }) {
     if (busy) return;
     setBusy(true);
     setMessage(null);
+    setNotice(null);
     setLastResult(null);
     try {
       const sit = await client.pairAndDetect({ serverUrl, password, deviceName });
@@ -112,9 +158,11 @@ function NativeSyncView({ client }: { client: SyncClient }) {
         setSituation(sit);
       } else if (sit.serverHasData && !sit.localHasData) {
         await client.completePairingReplace();
+        await enableSyncPref();
         syncStatus.recordSuccess();
       } else {
         const result = await client.completePairingUpload();
+        await enableSyncPref();
         setLastResult(result);
         syncStatus.recordSuccess();
       }
@@ -134,6 +182,7 @@ function NativeSyncView({ client }: { client: SyncClient }) {
     setMessage(null);
     try {
       const result = await client.completePairingUpload();
+      await enableSyncPref();
       setLastResult(result);
       setSituation(null);
       syncStatus.recordSuccess();
@@ -155,6 +204,7 @@ function NativeSyncView({ client }: { client: SyncClient }) {
     setMessage(null);
     try {
       await client.completePairingReplace();
+      await enableSyncPref();
       setSituation(null);
       syncStatus.recordSuccess();
     } catch (error) {
@@ -169,6 +219,7 @@ function NativeSyncView({ client }: { client: SyncClient }) {
     setBusy(true);
     try {
       await client.cancelPairing();
+      await disableSyncPref();
       setSituation(null);
       setPaired(null);
     } catch (error) {
@@ -188,6 +239,7 @@ function NativeSyncView({ client }: { client: SyncClient }) {
     setBusy(true);
     try {
       await client.unpair();
+      await disableSyncPref();
       setPaired(null);
       setSituation(null);
       setLastResult(null);
@@ -197,6 +249,72 @@ function NativeSyncView({ client }: { client: SyncClient }) {
       setBusy(false);
     }
   }
+
+  function onStartEditUrl() {
+    if (!paired) return;
+    setDraftUrl(paired.serverUrl);
+    setUrlError(null);
+    setEditingUrl(true);
+  }
+
+  function onCancelEditUrl() {
+    setEditingUrl(false);
+    setUrlError(null);
+  }
+
+  async function onSaveUrl() {
+    if (busy || !paired) return;
+    let normalized: string;
+    try {
+      normalized = normalizeServerUrl(draftUrl);
+    } catch (error) {
+      setUrlError(
+        error instanceof Error ? error.message : strings.syncUrlInvalid,
+      );
+      return;
+    }
+    if (normalized === paired.serverUrl) {
+      setEditingUrl(false);
+      setUrlError(null);
+      return;
+    }
+    setBusy(true);
+    setMessage(null);
+    try {
+      // why: ganti URL = pairing ulang — buang token + reset cursor/device
+      // lewat cancelPairing yang ada, matikan pref, lalu kembali ke
+      // formulir penautan dengan URL baru sudah terisi.
+      await client.cancelPairing();
+      await disableSyncPref();
+      setPaired(null);
+      setSituation(null);
+      setLastResult(null);
+      setServerUrl(normalized);
+      setEditingUrl(false);
+      setUrlError(null);
+      setNotice(strings.syncRePairNeeded);
+    } catch (error) {
+      fail(error);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const effectiveUrl = paired?.serverUrl ?? "";
+  const syncAllowed = canSync({
+    enabled: syncEnabled,
+    serverUrl: effectiveUrl,
+    online,
+  });
+  const syncHint: string | null = !paired
+    ? null
+    : !syncEnabled
+      ? strings.syncOffHint
+      : !online
+        ? strings.syncOfflineHint
+        : syncAllowed
+          ? null
+          : strings.syncUrlInvalidHint;
 
   const rejected = lastResult?.pushed.rejected ?? [];
   const conflicts = lastResult?.pushed.conflicts ?? [];
@@ -215,6 +333,19 @@ function NativeSyncView({ client }: { client: SyncClient }) {
           <p className="mt-1 text-base font-bold" aria-live="polite">
             {status.lastSyncAt ? formatSyncTime(status.lastSyncAt) : strings.syncNever}
           </p>
+          <div className="mt-4 flex min-h-[44px] items-center justify-between gap-3 border-t border-border pt-4">
+            <span className="flex min-w-0 flex-col">
+              <Label htmlFor="sync-enabled">{strings.syncToggleLabel}</Label>
+              <span className="mt-1 text-xs text-muted-foreground">
+                {strings.syncToggleHint}
+              </span>
+            </span>
+            <Switch
+              id="sync-enabled"
+              checked={syncEnabled}
+              onCheckedChange={onToggleSync}
+            />
+          </div>
           {status.lastError ? (
             <p role="alert" className="mt-2 flex items-start gap-2 text-sm font-medium text-destructive">
               <ErrorIcon size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
@@ -222,15 +353,20 @@ function NativeSyncView({ client }: { client: SyncClient }) {
             </p>
           ) : null}
           {paired ? (
-            <Button
-              type="button"
-              onClick={runSync}
-              disabled={busy || status.syncing}
-              className="mt-4 min-h-[44px] w-full"
-            >
-              <RefreshIcon size={18} aria-hidden="true" />
-              {busy || status.syncing ? strings.syncing : strings.syncNow}
-            </Button>
+            <>
+              <Button
+                type="button"
+                onClick={runSync}
+                disabled={busy || status.syncing || !syncAllowed}
+                className="mt-4 min-h-[44px] w-full"
+              >
+                <RefreshIcon size={18} aria-hidden="true" />
+                {busy || status.syncing ? strings.syncing : strings.syncNow}
+              </Button>
+              {syncHint ? (
+                <p className="mt-2 text-xs text-muted-foreground">{syncHint}</p>
+              ) : null}
+            </>
           ) : null}
         </CardContent>
       </Card>
@@ -238,6 +374,16 @@ function NativeSyncView({ client }: { client: SyncClient }) {
       {message ? (
         <p role="alert" className="mt-3 text-sm font-medium text-destructive">
           {message}
+        </p>
+      ) : null}
+
+      {notice ? (
+        <p
+          role="status"
+          className="mt-3 flex items-start gap-2 text-sm text-muted-foreground"
+        >
+          <InfoIcon size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
+          {notice}
         </p>
       ) : null}
 
@@ -314,7 +460,59 @@ function NativeSyncView({ client }: { client: SyncClient }) {
               {paired.deviceName || strings.noNote}
             </p>
             <p className="mt-2 text-sm text-muted-foreground">{strings.syncServerLabel}</p>
-            <p className="break-all font-mono text-sm">{paired.serverUrl}</p>
+            {editingUrl ? (
+              <div className="mt-1 flex flex-col gap-2">
+                <Label htmlFor="sync-server-url-edit">{strings.serverUrlLabel}</Label>
+                <Input
+                  id="sync-server-url-edit"
+                  name="serverUrl"
+                  type="url"
+                  inputMode="url"
+                  autoComplete="url"
+                  value={draftUrl}
+                  onChange={(event) => setDraftUrl(event.target.value)}
+                  className="min-h-[44px] font-mono"
+                  aria-invalid={urlError !== null}
+                />
+                {urlError ? (
+                  <p role="alert" className="text-sm font-medium text-destructive">
+                    {urlError}
+                  </p>
+                ) : null}
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    onClick={onSaveUrl}
+                    disabled={busy}
+                    className="min-h-[44px] flex-1"
+                  >
+                    {strings.save}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onCancelEditUrl}
+                    disabled={busy}
+                    className="min-h-[44px] flex-1"
+                  >
+                    {strings.cancel}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-start justify-between gap-3">
+                <p className="break-all font-mono text-sm">{paired.serverUrl}</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onStartEditUrl}
+                  disabled={busy}
+                  className="min-h-[44px] shrink-0"
+                >
+                  {strings.syncChangeUrl}
+                </Button>
+              </div>
+            )}
             <p className="mt-2 text-xs text-muted-foreground">{strings.syncUnpairHint}</p>
             <Button
               type="button"

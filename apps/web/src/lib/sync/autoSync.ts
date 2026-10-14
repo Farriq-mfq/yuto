@@ -15,12 +15,32 @@ import { scheduleSyncAfterWrite } from "./syncStatus";
 
 /** Tulis lokal lalu jadwalkan sync; baca diteruskan apa adanya. */
 export class AutoSyncDataSource implements DataSource {
-  constructor(private readonly inner: DataSource) {}
+  constructor(
+    private readonly inner: DataSource,
+    /**
+     * Guard call-site (dibaca per tulis): kembalikan false untuk melewati
+     * penjadwalan — mis. baca pref `loadSyncEnabled()` + status online.
+     * SENGAJA di sini, bukan di dalam scheduler murni
+     * (`scheduleSyncAfterWrite`), agar scheduler + test-nya tak tersentuh.
+     * Default (tanpa guard): jadwalkan seperti sebelumnya.
+     */
+    private readonly shouldSync?: () => boolean | Promise<boolean>,
+    /** Injeksi penjadwal; hanya untuk test. */
+    private readonly schedule: () => void = scheduleSyncAfterWrite,
+  ) {}
 
   private afterWrite<T>(work: Promise<T>): Promise<T> {
     return work.then(
       (value) => {
-        scheduleSyncAfterWrite();
+        void Promise.resolve(this.shouldSync?.() ?? true).then(
+          (ok) => {
+            if (ok) this.schedule();
+          },
+          () => {
+            // Abaikan: tulis lokal sudah sukses; sync dicoba di tulis
+            // berikutnya.
+          },
+        );
         return value;
       },
       (error: unknown) => {
