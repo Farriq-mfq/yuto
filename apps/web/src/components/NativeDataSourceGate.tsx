@@ -1,6 +1,16 @@
 import { useEffect, useState } from "react";
 import { DataSourceProvider } from "../lib/datasourceContext";
 import type { DataSource } from "../lib/datasource";
+import { AutoSyncDataSource } from "../lib/sync/autoSync";
+import { createSyncClient } from "../lib/sync/syncEngine";
+import { HttpSyncTransport } from "../lib/sync/syncTransport";
+import { loadSyncEnabled, canSync } from "../lib/sync/syncPrefs";
+import { createTokenStore } from "../lib/sync/tokenStore";
+import {
+  cancelScheduledSync,
+  initSyncRunner,
+  syncStatus,
+} from "../lib/sync/syncStatus";
 import { strings } from "../strings";
 
 // why: modul native (plugin SQLite + SQL migrasi) diimpor DINAMIS agar
@@ -26,9 +36,54 @@ export function NativeDataSourceGate({ children }: { children: React.ReactNode }
     let cancelled = false;
     setState({ status: "loading" });
     import("../lib/local/nativeFactory")
-      .then((mod) => mod.createNativeDataSource())
-      .then((dataSource) => {
-        if (!cancelled) setState({ status: "ready", dataSource });
+      .then(async (mod) => {
+        const local = await mod.createNativeDataSource();
+        if (cancelled) return;
+        const tokens = createTokenStore({ native: true });
+        const transport = new HttpSyncTransport();
+        const client = createSyncClient({ ds: local, transport, tokens });
+        // why: sync guard terpusat di sini (bukan di engine): tanpa token,
+        // switch mati, URL tak valid, atau offline → tak ada request sync
+        // sama sekali, dan syncNow tak pernah melempar NOT_PAIRED ke status.
+        const shouldSync = async (): Promise<boolean> => {
+          const [enabled, serverUrl, token] = await Promise.all([
+            loadSyncEnabled(),
+            tokens.loadServerUrl(),
+            tokens.loadToken(),
+          ]);
+          return (
+            token !== null &&
+            canSync({
+              enabled,
+              serverUrl: serverUrl ?? "",
+              online:
+                typeof navigator === "undefined" ? true : navigator.onLine,
+            })
+          );
+        };
+        const runScheduledSync = async (): Promise<void> => {
+          try {
+            syncStatus.setSyncing(true);
+            await client.syncNow();
+            syncStatus.recordSuccess();
+          } catch (error) {
+            syncStatus.recordError(
+              error instanceof Error ? error.message : String(error),
+            );
+          } finally {
+            syncStatus.setSyncing(false);
+          }
+        };
+        initSyncRunner(runScheduledSync);
+        const wrapped = new AutoSyncDataSource(local, shouldSync);
+        if (!cancelled) {
+          setState({ status: "ready", dataSource: wrapped });
+          // why: sync saat dibuka (bukan hanya pasca-tulis); fire-and-forget
+          // agar UI tak diblokir, guard di dalam shouldSync.
+          void shouldSync().then((ok) => {
+            if (ok && !cancelled) void runScheduledSync();
+          });
+        }
       })
       .catch((error) => {
         // why: pesan UI sengaja umum (tidak membocorkan detail teknis ke
@@ -41,12 +96,12 @@ export function NativeDataSourceGate({ children }: { children: React.ReactNode }
             ? (error.stack ?? error.message)
             : JSON.stringify(error);
         console.error(`[yuto] native database failed to open: ${detail}`);
-        // logcat (`adb logcat`) saat debug di perangkat.
-        console.error("[yuto] native database failed to open:", error);
         if (!cancelled) setState({ status: "error" });
       });
     return () => {
       cancelled = true;
+      cancelScheduledSync();
+      initSyncRunner(null);
     };
   }, [attempt]);
 
