@@ -99,5 +99,15 @@ Standalone phone stays fully usable without a server; sync turns on by pairing. 
 - [ ] Docs: PRD and TRD (sync protocol, security, standalone vs synced); README (pairing, and how the phone reaches the server over HTTPS or a VPN).
 - Done when: web and phone (or two phones) show identical balances after sync, offline edits merge without data loss in the tested cases, and a lost phone can be revoked.
 
+## Phase 12: Sync mode toggle (online vs offline)
+Two fixed modes, no auto-detection surprises:
+- Web: online penuh ke Postgres server, selalu. Tidak ada toggle, tidak ada mode offline.
+- Mobile: offline-first dengan data lokal. Layar Sync berisi switch sinkronisasi on/off + field URL server. Sinkronisasi AKTIF hanya bila switch on + URL valid + perangkat online; bila switch off, tombol sync nonaktif dan aplikasi murni lokal (tak ada upaya jaringan).
+- Preferensi switch + URL tersimpan di perangkat (ikut terkunci bersama DB); ganti URL membutuhkan pairing ulang.
+- [ ] Switch on/off + field URL server di layar Sync (mobile saja), validasi HTTPS/loopback, persist.
+- [ ] Guard: sync engine, auto-sync, dan tombol Sync now tidak jalan bila switch off atau URL kosong/tak valid; offline selalu lokal.
+- [ ] Test: off = nol request jaringan; on + URL valid + online = sync jalan; URL diganti = pairing ulang.
+- Done when: web tetap online-penuh tanpa toggle, dan HP berpindah offline-murni ↔ tersinkron hanya lewat switch + URL yang valid.
+
 ## Deferred on purpose
 Budgets, goals, bank sync, receipt scanning, multi-currency, shared wallets, caching balances, prebuilt images on a registry, built-in TLS, multi-instance scaling, offline write queue and background sync, custom in-app install banner, iOS native app (PWA covers iOS), background sync on the phone, conflict-resolution screen, QR pairing.
