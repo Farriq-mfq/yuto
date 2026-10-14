@@ -186,21 +186,32 @@ export function AppLock({ children }: { children: React.ReactNode }) {
     let handle: { remove: () => Promise<void> } | null = null;
     CapacitorApp.addListener("appStateChange", ({ isActive }) => {
       if (isActive) {
+        // why: hanya kunci-ulang bila background tercatat SUNGGUH terjadi.
+        // Versi lama memanggil shouldRelock(null) yang fail-closed → true,
+        // sehingga event active apapun (termasuk saat start) mengunci ulang
+        // dan user tak pernah bisa bertahan unlocked ("tidak bisa login").
+        // Timestamp dikonsumsi satu-kali agar event ganda tak mengunci ulang.
+        const wasBackgroundedAt = backgroundedAtRef.current;
+        backgroundedAtRef.current = null;
         if (
           stateRef.current.status === "unlocked" &&
-          shouldRelock(backgroundedAtRef.current, Date.now())
+          wasBackgroundedAt !== null &&
+          shouldRelock(wasBackgroundedAt, Date.now())
         ) {
           void refreshCapability().then((capability) => {
             if (!capability) return;
-            setState({
+            const locked: Extract<LockState, { status: "locked" }> = {
               status: "locked",
               capability,
               authenticating: false,
               error: null,
-            });
+            };
+            setState(locked);
+            // why: auto-prompt seperti saat dibuka — user cukup otentikasi
+            // sekali, tak perlu mengetuk tombol dulu.
+            void unlockFromLockedRef.current(locked);
           });
         }
-        backgroundedAtRef.current = null;
       } else {
         backgroundedAtRef.current = Date.now();
       }
