@@ -502,7 +502,8 @@ describe("transactions", () => {
       authed(`/api/transactions/${income.id}`, cookie, { method: "DELETE" }),
     );
     expect(deleted.status).toBe(200);
-    transactionIds.splice(transactionIds.indexOf(income.id), 1);
+    // Soft delete: keep the id tracked so afterEach hard-deletes the
+    // tombstone; the balance assertion below proves it is excluded.
     expect(await summaryBalance(app, cookie, accountId)).toBe(-10000);
   });
 

@@ -397,7 +397,8 @@ describe("accounts", () => {
       authed(`/api/accounts/${account.id}`, cookie, { method: "DELETE" }),
     );
     expect(res.status).toBe(200);
-    accountIds.splice(accountIds.indexOf(account.id), 1);
+    // Soft delete: the tombstoned row stays tracked so afterEach can
+    // hard-delete it; the GET below already proves it is hidden.
 
     const gone = await app.handle(
       authed(`/api/accounts/${account.id}`, cookie),

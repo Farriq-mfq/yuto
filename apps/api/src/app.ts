@@ -6,15 +6,32 @@ import { SESSION_COOKIE, verifySessionToken } from "./modules/auth/service";
 import { accountRoutes } from "./modules/accounts/routes";
 import { categoryRoutes } from "./modules/categories/routes";
 import { reportRoutes } from "./modules/reports/routes";
+import { syncRoutes } from "./modules/sync/routes";
 import { transactionRoutes } from "./modules/transactions/routes";
 import { transferRoutes } from "./modules/transfers/routes";
 
-const PUBLIC_PATHS = ["/api/health", "/api/auth/login", "/api/config"];
+// /api/sync/pair is public like /auth/login: the owner password in the body
+// is the only credential, so no session is needed to pair a first device.
+const PUBLIC_PATHS = [
+  "/api/health",
+  "/api/auth/login",
+  "/api/config",
+  "/api/sync/pair",
+];
+
+// Device sync over bearer tokens ONLY: the session cookie never
+// authenticates these paths. The sync module verifies the device token
+// itself; everything else under /api/sync/* (devices registry) keeps the
+// cookie guard so only the owner in a browser can manage devices.
+function isSyncBearerPath(path: string): boolean {
+  const pathname = path.split("?")[0] ?? path;
+  return pathname === "/api/sync/push" || pathname === "/api/sync/pull";
+}
 
 export function createApp(env: Env = getEnv()) {
   return new Elysia()
     .onBeforeHandle(async ({ path, cookie, set }) => {
-      if (PUBLIC_PATHS.includes(path)) return;
+      if (PUBLIC_PATHS.includes(path) || isSyncBearerPath(path)) return;
       const token = cookie[SESSION_COOKIE]?.value;
       const valid =
         typeof token === "string" &&
@@ -50,6 +67,7 @@ export function createApp(env: Env = getEnv()) {
         .use(accountRoutes())
         .use(categoryRoutes())
         .use(reportRoutes())
+        .use(syncRoutes(env))
         .use(transactionRoutes())
         .use(transferRoutes()),
     );
