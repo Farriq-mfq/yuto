@@ -41,6 +41,8 @@ export function NativeDataSourceGate({ children }: { children: React.ReactNode }
             ? (error.stack ?? error.message)
             : JSON.stringify(error);
         console.error(`[yuto] native database failed to open: ${detail}`);
+        // logcat (`adb logcat`) saat debug di perangkat.
+        console.error("[yuto] native database failed to open:", error);
         if (!cancelled) setState({ status: "error" });
       });
     return () => {
