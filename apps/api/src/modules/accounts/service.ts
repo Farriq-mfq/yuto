@@ -123,6 +123,8 @@ export async function getAccountsSummary(): Promise<AccountsSummary> {
       initialBalance: accounts.initialBalance,
       showCategory: accounts.showCategory,
       createdAt: accounts.createdAt,
+      deletedAt: accounts.deletedAt,
+      serverSeq: accounts.serverSeq,
       balance: sql`${accounts.initialBalance} + ${txNet} + ${transferIn} - ${transferOut}`,
     })
     .from(accounts)

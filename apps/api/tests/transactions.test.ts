@@ -192,7 +192,7 @@ describe("transactions", () => {
     const tag = randomUUID().slice(0, 8);
     const [row] = await db
       .insert(categories)
-      .values({ name: `Kategori ${tag}`, kind, icon: "box", color: "#000000" })
+      .values({ slug: `test-${tag}`, name: `Kategori ${tag}`, kind, icon: "box", color: "#000000" })
       .returning({ id: categories.id });
     if (!row) throw new Error("Gagal membuat kategori test.");
     categoryIds.push(row.id);
