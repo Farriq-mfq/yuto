@@ -198,8 +198,13 @@ function balanceColumns() {
     initialBalance: accounts.initialBalance,
     showCategory: accounts.showCategory,
     createdAt: accounts.createdAt,
+    // why: alias eksplisit WAJIB — drizzle tidak memberi alias pada ekspresi
+    // SQL mentah, dan plugin SQLite Capacitor membaca kolom BY NAME sehingga
+    // query gagal di perangkat ("Couldn't read row 0 column -1") tepat saat
+    // ada baris (DB kosong lolos!). bun:sqlite toleran sehingga test lokal
+    // tidak menangkapnya.
     balance:
-      sql<number>`${accounts.initialBalance} + ${txNet} + ${transferIn} - ${transferOut}`,
+      sql<number>`${accounts.initialBalance} + ${txNet} + ${transferIn} - ${transferOut} AS "balance"`,
   };
 }
 
