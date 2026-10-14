@@ -61,3 +61,8 @@ work identically (soft deletes, `dirty` flags, categories matched by stable
 slug). Backup/restore via `pg_dump` is replaced by export/import of one
 versioned file (`formatVersion: 1`): export -> fresh install -> import gives
 identical balances (tested). Sync to the owner's server is a later phase.
+
+**Aplikasi Android** (`com.farriq.yuto`, APK dari GitHub Release): data di
+HP (SQLite terenkripsi), tanpa layar login — dibuka dengan biometrik atau
+kunci layar, terkunci ulang setelah 2 menit di background. Backup cloud
+mati; backup manual via export. Peta butuh internet, offline ada pesannya.

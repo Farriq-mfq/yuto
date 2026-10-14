@@ -82,6 +82,23 @@ docker compose up -d --build
 
 Migrasi database berjalan otomatis saat start dan hanya bergerak maju.
 
+## Aplikasi Android
+
+APK rilis (`app.yuto`, `com.farriq.yuto`) dilampirkan di setiap GitHub
+Release (dibangun + ditandatangani oleh CI). Install manual dari file APK;
+tidak ada di Play Store.
+
+- Data tersimpan **di HP** (SQLite terenkripsi, bukan server). Login
+  password tidak ada di aplikasi Android — sebagai gantinya **kunci
+  aplikasi**: biometrik, atau PIN/pola/sandi layar kunci bila biometrik
+  tidak tersedia. Tanpa kunci layar, aplikasi menolak berjalan.
+- Backup cloud Android **dimatikan** (`allowBackup=false`): backup bawaan
+  tidak bisa mengembalikan DB terenkripsi. Backup manual via
+  **export** di aplikasi (satu file berversi), restore via **import**.
+  Simpan file export di luar HP.
+- Peta lokasi butuh internet untuk memuat tile; offline, picker menampilkan
+  pesan dan nama lokasi tetap bisa diisi manual.
+
 ## Dev lokal (singkat)
 
 ```bash
