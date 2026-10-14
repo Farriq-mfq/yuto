@@ -151,3 +151,32 @@ The API refuses to start if `JWT_SECRET` is missing or shorter than 32 chars, if
     secret touches a tracked file. The decoded keystore exists on the
     runner only (`*.keystore`/`*.jks` are gitignored) and is deleted with
     `if: always()` after the upload.
+
+## 11. Sync with your own server
+
+Standalone phone stays fully usable without a server; sync turns on only by
+explicit pairing. The web app always stays server-backed.
+
+- **Decision: hand-rolled sync, not a sync engine** (PowerSync/Electric
+  evaluated and rejected): one owner, a few devices, and no extra service
+  in `docker compose`. The protocol below is the whole surface.
+- **Pairing**: `POST /api/sync/pair` (owner password -> per-device token,
+  login-style rate limit; only the SHA-256 hash is stored). The token is
+  shown once. Devices are listed/revoked in the web app; a revoked token
+  gets 401 everywhere. Sync tokens live in secure storage on-device
+  (browser: localStorage on the trusted LAN).
+- **Push** (`POST /api/sync/push`): batched accounts/transactions(+items)/
+  transfers in one DB transaction, idempotent upsert by client UUID,
+  FK-safe order, same validation as the normal routes, per-row
+  applied/rejected. Soft deletes travel as tombstones.
+- **Pull** (`GET /api/sync/pull?since=<server_seq>&limit<=500`): rows with
+  greater `server_seq` (tombstones included) ordered ascending, paged per
+  type; `cursor` = highest seq seen. Categories always ship full (matched
+  by stable `slug`, never by name).
+- **Cursors, not clocks**: ordering comes from one Postgres sequence
+  (`sync_seq`, stamped by trigger); per-row conflicts resolve
+  last-write-wins by arrival. A delete never removes an account that still
+  has live rows (rejected with CONFLICT, phone resurrects locally).
+- **Security**: tokens random 256-bit, hashed at rest, revocable; pairing
+  rate-limited; sync requires HTTPS (or loopback) — cleartext LAN is
+  rejected by the client. No user data in logs.

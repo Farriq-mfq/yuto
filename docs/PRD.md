@@ -60,7 +60,14 @@ instead of the server Postgres: balances, transfers, reports, and categories
 work identically (soft deletes, `dirty` flags, categories matched by stable
 slug). Backup/restore via `pg_dump` is replaced by export/import of one
 versioned file (`formatVersion: 1`): export -> fresh install -> import gives
-identical balances (tested). Sync to the owner's server is a later phase.
+identical balances (tested).
+
+**Sinkronisasi ke server sendiri (opsional):** HP tetap bisa dipakai penuh
+tanpa server; sync menyala hanya lewat pairing eksplisit per perangkat
+(token per-device, bisa dicabut; HP yang dicabut langsung ditolak).
+Setelah sync, web dan HP menunjukkan saldo identik; edit offline bergabung
+saat berikutnya online tanpa kehilangan data. Detail protokol dan keamanan:
+`docs/TRD.md` §11.
 
 **Aplikasi Android** (`com.farriq.yuto`, APK dari GitHub Release): data di
 HP (SQLite terenkripsi), tanpa layar login — dibuka dengan biometrik atau

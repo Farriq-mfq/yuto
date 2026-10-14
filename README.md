@@ -118,6 +118,22 @@ tidak ada di Play Store.
 - Peta lokasi butuh internet untuk memuat tile; offline, picker menampilkan
   pesan dan nama lokasi tetap bisa diisi manual.
 
+## Pairing HP ke server (opsional)
+
+Tanpa pairing, HP murni offline dengan data lokal. Untuk sync:
+
+1. Pastikan server bisa dijangkau HP via **HTTPS** (jangan HTTP polos;
+   di LAN gunakan VPN atau reverse proxy ber-TLS — client menolak
+   cleartext kecuali loopback).
+2. Di HP: buka layar Sync → isi URL server
+   (mis. `https://yuto.contoh.id`) + password pemilik + nama perangkat
+   → Pair.
+3. Bila HP dan server sama-sama sudah punya data: pilih **upload HP ini**,
+   **timpa dari server**, atau **batal**.
+4. Tombol **Sync now** kapan saja; waktu sync terakhir + error tampil di
+   layar yang sama. HP yang hilang: cabut dari daftar perangkat di web —
+   tokennya langsung 401.
+
 ## Dev lokal (singkat)
 
 ```bash

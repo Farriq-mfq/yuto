@@ -96,7 +96,7 @@ Standalone phone stays fully usable without a server; sync turns on by pairing. 
 - [ ] Mobile client: `dirty` flags and a `sync_state` table (cursor, device id); sync on app open, after local writes (debounced), and with a "Sync now" button; show last sync time and errors; token in secure storage; HTTPS only, no cleartext.
 - [ ] First pairing when both sides already have data: choose upload this phone, replace this phone with the server's data, or cancel. Categories are matched by `slug` and the phone remaps its local category ids. Tests for each path, and no duplicate categories.
 - [ ] Tests (real Postgres, two simulated devices): add on A shows on B; edit/edit conflict; delete propagates; offline edits push later; repeated push is harmless; balances identical on both after sync; revoked device is blocked; invalid data is rejected like normal routes.
-- [ ] Docs: PRD and TRD (sync protocol, security, standalone vs synced); README (pairing, and how the phone reaches the server over HTTPS or a VPN).
+- [x] Docs: PRD and TRD (sync protocol, security, standalone vs synced); README (pairing, and how the phone reaches the server over HTTPS or a VPN).
 - Done when: web and phone (or two phones) show identical balances after sync, offline edits merge without data loss in the tested cases, and a lost phone can be revoked.
 
 ## Deferred on purpose
