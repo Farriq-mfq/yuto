@@ -1,0 +1,103 @@
+# Android release signing
+#
+# Every `v*.*.*` tag builds a signed release APK and attaches it as
+# `yuto-<tag>-release.apk` to the GitHub Release created by
+# `.github/workflows/release.yml` (this workflow only uploads; it never
+# creates the release, so `release.yml` stays the single releaser).
+#
+# Signing is injected via `-Pandroid.injected.signing.*` Gradle properties,
+# so `apps/web/android/app/build.gradle` needs no `signingConfigs` block
+# and no secret ever lands in a tracked file. The keystore is decoded from
+# a secret to `apps/web/android/app/yuto-release.keystore` on the runner
+# only (covered by `*.keystore` in `android/.gitignore` + `app/.gitignore`)
+# and deleted in the last step (`if: always()`).
+#
+# Required repository secrets (Settings > Secrets and variables > Actions;
+# values are created once by the owner, never committed):
+#   ANDROID_KEYSTORE_BASE64  base64 of the release keystore:
+#                            `base64 -w0 yuto-release.keystore`
+#   KEYSTORE_PASSWORD        keystore password used at `keytool -genkeypair`
+#   KEY_ALIAS                key alias (e.g. `yuto`)
+#   KEY_PASSWORD             key password (often same as keystore password)
+# Generate the keystore once (keep the file + passwords offline):
+#   keytool -genkeypair -v -keystore yuto-release.keystore -alias yuto \
+#     -keyalg RSA -keysize 2048 -validity 10000
+# Then store it, e.g.: `gh secret set ANDROID_KEYSTORE_BASE64 < yuto.b64`
+#
+# Build demand: applicationId `com.farriq.yuto` (capacitor.config.ts),
+# JDK 17, Android SDK. APK build itself is NOT verified locally (needs the
+# SDK + the real keystore) — first green run on a tag is the verification.
+
+name: Android APK
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write   # needed to upload the APK to the GitHub Release
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag must be semantic (vMAJOR.MINOR.PATCH or -prerelease)
+        run: |
+          if ! [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::$GITHUB_REF_NAME is not vMAJOR.MINOR.PATCH[-prerelease]"; exit 1
+          fi
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+      - uses: android-actions/setup-android@v3
+      # shortcut: actions pinned by tag and bun by "latest"; pin to a SHA / exact version if builds must be reproducible
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - name: Build web
+        run: bun run --cwd apps/web build
+      - name: Sync Capacitor Android shell
+        run: bunx cap sync
+        working-directory: apps/web
+      - name: Restore release keystore (runner only, never committed)
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 secret is not set (repo Settings > Secrets and variables > Actions)"; exit 1
+          fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > apps/web/android/app/yuto-release.keystore
+          chmod 600 apps/web/android/app/yuto-release.keystore
+      - name: Assemble signed release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          chmod +x apps/web/android/gradlew
+          ./apps/web/android/gradlew -p apps/web/android assembleRelease \
+            -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/apps/web/android/app/yuto-release.keystore" \
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+      - name: Rename APK
+        run: cp apps/web/android/app/build/outputs/apk/release/app-release.apk "yuto-$GITHUB_REF_NAME-release.apk"
+      - name: Attach APK to the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # release.yml creates the release on the same tag push; wait for it (same-run race).
+          for _ in $(seq 1 30); do
+            gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 && break
+            sleep 10
+          done
+          gh release upload "$GITHUB_REF_NAME" "yuto-$GITHUB_REF_NAME-release.apk" --clobber
+      - name: Delete keystore from runner
+        if: always()
+        run: rm -f apps/web/android/app/yuto-release.keystore

@@ -1,16 +1,19 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Capacitor } from "@capacitor/core";
 import "@fontsource-variable/inter";
 import "@fontsource-variable/source-serif-4";
 import "@fontsource/ibm-plex-mono";
-import { StrictMode } from "react";
+import { StrictMode, Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Shell } from "./App";
+import { NativeDataSourceGate } from "./components/NativeDataSourceGate";
 import { PwaUpdatePrompt } from "./components/PwaUpdatePrompt";
 import { Toaster } from "./components/ui/sonner";
 import "./index.css";
 import { DataSourceProvider } from "./lib/datasourceContext";
 import { applyThemePreference, THEME_STORAGE_KEY } from "./lib/theme";
+import { strings } from "./strings";
 import Home from "./pages/Home";
 import Activity from "./pages/Activity";
 import Login from "./pages/Login";
@@ -40,34 +43,78 @@ window.addEventListener("storage", (event) => {
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing #root element");
 
+// why: aplikasi native (Capacitor) memakai SQLite lokal single-owner —
+// tanpa login, tanpa sesi HTTP. Web tetap memakai HttpDataSource + /login.
+const isNative = Capacitor.isNativePlatform();
+
+// why: chunk AppLock (plugin biometrik + @capacitor/app) hanya diunduh dan
+// di-render di perangkat; web tak pernah menyentuhnya. Fallback Suspense
+// fail-closed: layar "memeriksa kunci", bukan konten aplikasi.
+// Urutan di bawah: AppLock di LUAR NativeDataSourceGate — database
+// terenkripsi baru dibuka SETELAH user lolos autentikasi perangkat.
+const NativeAppLock = lazy(() =>
+  import("./components/AppLock").then((module) => ({
+    default: module.AppLock,
+  })),
+);
+
+function NativeLockSplash() {
+  return (
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-background px-6">
+      <p className="text-sm text-muted-foreground" role="status">
+        {strings.lockChecking}
+      </p>
+    </div>
+  );
+}
+
+function RoutedApp() {
+  return (
+    <BrowserRouter>
+      <PwaUpdatePrompt />
+      <Toaster position="top-center" />
+      <Routes>
+        <Route
+          path="/login"
+          element={isNative ? <Navigate to="/" replace /> : <Login />}
+        />
+        <Route element={<Shell />}>
+          <Route index element={<Home />} />
+          <Route path="/wallet" element={<Wallet />} />
+          <Route path="/wallet/new" element={<AccountNew />} />
+          <Route path="/wallet/:id" element={<AccountEdit />} />
+          <Route path="/transfer" element={<Transfer />} />
+          <Route path="/record" element={<Record />} />
+          <Route path="/transactions/:id" element={<TransactionDetail />} />
+          <Route
+            path="/transactions/:id/edit"
+            element={<TransactionEdit />}
+          />
+          <Route path="/activity" element={<Activity />} />
+          <Route path="/reports" element={<Reports />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
 createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <DataSourceProvider>
-      <BrowserRouter>
-        <PwaUpdatePrompt />
-        <Toaster position="top-center" />
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route element={<Shell />}>
-            <Route index element={<Home />} />
-            <Route path="/wallet" element={<Wallet />} />
-            <Route path="/wallet/new" element={<AccountNew />} />
-            <Route path="/wallet/:id" element={<AccountEdit />} />
-            <Route path="/transfer" element={<Transfer />} />
-            <Route path="/record" element={<Record />} />
-            <Route path="/transactions/:id" element={<TransactionDetail />} />
-            <Route
-              path="/transactions/:id/edit"
-              element={<TransactionEdit />}
-            />
-            <Route path="/activity" element={<Activity />} />
-            <Route path="/reports" element={<Reports />} />
-          </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-      </DataSourceProvider>
+      {isNative ? (
+        <Suspense fallback={<NativeLockSplash />}>
+          <NativeAppLock>
+            <NativeDataSourceGate>
+              <RoutedApp />
+            </NativeDataSourceGate>
+          </NativeAppLock>
+        </Suspense>
+      ) : (
+        <DataSourceProvider>
+          <RoutedApp />
+        </DataSourceProvider>
+      )}
     </QueryClientProvider>
   </StrictMode>,
 );

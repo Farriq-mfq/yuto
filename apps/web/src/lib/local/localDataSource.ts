@@ -208,6 +208,11 @@ function balanceColumns() {
  * injection agar kelak Capacitor bisa inject driver lain — class ini TAK
  * import `bun:sqlite` langsung (lihat `factory.ts` untuk konstruksi).
  *
+ * Syarat driver: semua pemakaian query di-await (transaksi memakai callback
+ * async), sehingga `BunSQLiteDatabase` (sync, dipakai test) maupun
+ * `SqliteRemoteDatabase` dari `drizzle-orm/sqlite-proxy` (async, dipakai
+ * aplikasi native — lihat `nativeFactory.ts`) sama-sama jalan.
+ *
  * Kontrak vs HttpDataSource (didokumentasikan perbedannya):
  * - `login()` no-op sukses: tak ada auth single-owner di perangkat.
  * - `getTransaction`/`getAccount` me-return `null` bila tak ada/terhapus
@@ -562,8 +567,12 @@ export class LocalDataSource implements DataSource {
     }
     const now = Date.now();
     const txId = crypto.randomUUID();
-    this.db.transaction((tx) => {
-      tx
+    // why: callback async + statement di-await (bukan .run() sync) agar jalan
+    // di driver async sqlite-proxy/Capacitor. Di bun:sqlite (dipakai test)
+    // statement tetap dieksekusi berurutan; atomisitas rollback penuh hanya
+    // dijamin driver async (proxy mengirim begin/commit/rollback).
+    await this.db.transaction(async (tx) => {
+      await tx
         .insert(transactions)
         .values({
           id: txId,
@@ -580,10 +589,9 @@ export class LocalDataSource implements DataSource {
           longitude: input.longitude ?? null,
           updatedAt: now,
           dirty: 1,
-        })
-        .run();
+        });
       for (const item of input.items ?? []) {
-        tx
+        await tx
           .insert(transactionItems)
           .values({
             id: crypto.randomUUID(),
@@ -593,8 +601,7 @@ export class LocalDataSource implements DataSource {
             unitPrice: item.unitPrice,
             updatedAt: now,
             dirty: 1,
-          })
-          .run();
+          });
       }
     });
   }
@@ -643,7 +650,7 @@ export class LocalDataSource implements DataSource {
     }
 
     const now = Date.now();
-    this.db.transaction((tx) => {
+    await this.db.transaction(async (tx) => {
       const values: Partial<typeof transactions.$inferInsert> = {};
       if (input.accountId !== undefined) values.accountId = input.accountId;
       if (input.categoryId !== undefined) values.categoryId = input.categoryId;
@@ -657,14 +664,13 @@ export class LocalDataSource implements DataSource {
       if (input.latitude !== undefined) values.latitude = input.latitude;
       if (input.longitude !== undefined) values.longitude = input.longitude;
       if (Object.keys(values).length > 0) {
-        tx
+        await tx
           .update(transactions)
           .set({ ...values, updatedAt: now, dirty: 1 })
-          .where(eq(transactions.id, id))
-          .run();
+          .where(eq(transactions.id, id));
       }
       if (input.items !== undefined) {
-        tx
+        await tx
           .update(transactionItems)
           .set({ deletedAt: now, updatedAt: now, dirty: 1 })
           .where(
@@ -672,10 +678,9 @@ export class LocalDataSource implements DataSource {
               eq(transactionItems.transactionId, id),
               isNull(transactionItems.deletedAt),
             ),
-          )
-          .run();
+          );
         for (const item of input.items) {
-          tx
+          await tx
             .insert(transactionItems)
             .values({
               id: crypto.randomUUID(),
@@ -685,8 +690,7 @@ export class LocalDataSource implements DataSource {
               unitPrice: item.unitPrice,
               updatedAt: now,
               dirty: 1,
-            })
-            .run();
+            });
         }
       }
     });
@@ -697,13 +701,12 @@ export class LocalDataSource implements DataSource {
     const existing = await this.liveTransaction(id);
     if (!existing) throw missing("Transaksi tidak ditemukan.");
     const now = Date.now();
-    this.db.transaction((tx) => {
-      tx
+    await this.db.transaction(async (tx) => {
+      await tx
         .update(transactions)
         .set({ deletedAt: now, updatedAt: now, dirty: 1 })
-        .where(eq(transactions.id, id))
-        .run();
-      tx
+        .where(eq(transactions.id, id));
+      await tx
         .update(transactionItems)
         .set({ deletedAt: now, updatedAt: now, dirty: 1 })
         .where(
@@ -711,8 +714,7 @@ export class LocalDataSource implements DataSource {
             eq(transactionItems.transactionId, id),
             isNull(transactionItems.deletedAt),
           ),
-        )
-        .run();
+        );
     });
   }
 
@@ -733,20 +735,17 @@ export class LocalDataSource implements DataSource {
     const to = await this.liveAccount(input.toAccountId);
     if (!to) throw missing("Akun tujuan tidak ditemukan.");
     const now = Date.now();
-    this.db.transaction((tx) => {
-      tx
-        .insert(transfers)
-        .values({
-          id: crypto.randomUUID(),
-          fromAccountId: input.fromAccountId,
-          toAccountId: input.toAccountId,
-          amount,
-          note: input.note ?? null,
-          occurredAt,
-          updatedAt: now,
-          dirty: 1,
-        })
-        .run();
+    await this.db.transaction(async (tx) => {
+      await tx.insert(transfers).values({
+        id: crypto.randomUUID(),
+        fromAccountId: input.fromAccountId,
+        toAccountId: input.toAccountId,
+        amount,
+        note: input.note ?? null,
+        occurredAt,
+        updatedAt: now,
+        dirty: 1,
+      });
     });
   }
 

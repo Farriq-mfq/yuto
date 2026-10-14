@@ -47,6 +47,13 @@ export default defineConfig({
     alias: {
       // file:// URL pathname avoids a node:path import (no @types/node here).
       "@": new URL("./src", import.meta.url).pathname,
+      // why: SQL migrasi packages/local adalah sumber kebenaran skema SQLite;
+      // nativeFactory mengimpornya via ?raw. Alias absolut diperlukan karena
+      // Vite/rolldown menolak import relatif yang keluar dari root.
+      "@yuto-migrations": new URL(
+        "../../packages/local/drizzle",
+        import.meta.url,
+      ).pathname,
     },
   },
   server: {

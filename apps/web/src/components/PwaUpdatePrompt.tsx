@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Capacitor } from "@capacitor/core";
 import { toast } from "sonner";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { strings } from "../strings";
@@ -15,6 +16,10 @@ import { strings } from "../strings";
  * sehingga tanpa guard ini toast muncul terus dan tombolnya tak berguna.
  */
 export function PwaUpdatePrompt() {
+  // why: service worker tak jalan di skema capacitor:// (aplikasi native
+  // diupdate via Play Store, bukan SW) — return null agar tak ada error
+  // registrasi di WebView.
+  if (Capacitor.isNativePlatform()) return null;
   if (import.meta.env.DEV) return null;
   return <PwaUpdatePromptInner />;
 }

@@ -1,0 +1,5 @@
+/build/*
+!/build/.npmkeep
+# Release keystore (CI-only, decoded from the ANDROID_KEYSTORE_BASE64 secret; never commit it)
+*.keystore
+*.jks
