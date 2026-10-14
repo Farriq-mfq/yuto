@@ -53,3 +53,11 @@ Hosted/SaaS version, multiple users or roles, sharing, telemetry or analytics, b
 - Default category list (see BACKGROUND_SCHEMA.md seed).
 - Map provider for the location picker (default: OpenStreetMap tiles; setting to disable).
 - Whether deleting an account with transactions should be blocked (MVP: blocked).
+
+## 10. Standalone edition (on-device data engine)
+Same app and same behavior, but data lives in an on-device SQLite database
+instead of the server Postgres: balances, transfers, reports, and categories
+work identically (soft deletes, `dirty` flags, categories matched by stable
+slug). Backup/restore via `pg_dump` is replaced by export/import of one
+versioned file (`formatVersion: 1`): export -> fresh install -> import gives
+identical balances (tested). Sync to the owner's server is a later phase.
