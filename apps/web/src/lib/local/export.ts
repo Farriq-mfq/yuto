@@ -103,22 +103,26 @@ function assertBackupPayload(data: unknown): asserts data is BackupPayload {
  * Restore penuh (mengganti isi database) dalam SATU sqlite transaction.
  * Urutan tulis aman-FK: accounts → categories → transactions → items →
  * transfers; hapus total sebelumnya dengan urutan terbalik.
+ *
+ * Async (bukan sync `.run()`) agar jalan di driver async sqlite-proxy
+ * (native) maupun bun:sqlite (test) — lihat catatan transaksi di
+ * `localDataSource.ts`.
  */
-export function importBackup(db: LocalDb, data: unknown): void {
+export async function importBackup(db: LocalDb, data: unknown): Promise<void> {
   assertBackupPayload(data);
-  db.transaction((tx) => {
-    tx.delete(transactionItems).run();
-    tx.delete(transfers).run();
-    tx.delete(transactions).run();
-    tx.delete(accounts).run();
-    tx.delete(categories).run();
-    for (const row of data.accounts) tx.insert(accounts).values(row).run();
-    for (const row of data.categories) tx.insert(categories).values(row).run();
+  await db.transaction(async (tx) => {
+    await tx.delete(transactionItems);
+    await tx.delete(transfers);
+    await tx.delete(transactions);
+    await tx.delete(accounts);
+    await tx.delete(categories);
+    for (const row of data.accounts) await tx.insert(accounts).values(row);
+    for (const row of data.categories) await tx.insert(categories).values(row);
     for (const entry of data.transactions) {
       const { items, ...row } = entry;
-      tx.insert(transactions).values(row).run();
-      for (const item of items) tx.insert(transactionItems).values(item).run();
+      await tx.insert(transactions).values(row);
+      for (const item of items) await tx.insert(transactionItems).values(item);
     }
-    for (const row of data.transfers) tx.insert(transfers).values(row).run();
+    for (const row of data.transfers) await tx.insert(transfers).values(row);
   });
 }

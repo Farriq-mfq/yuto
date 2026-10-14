@@ -183,6 +183,9 @@ export const strings = {
   updateAvailableHint: "Muat ulang untuk memakai versi terbaru Yuto.",
   updateReload: "Muat ulang",
   offlineMessage: "Sedang offline — data yang tampil mungkin tidak terbaru.",
+  nativeDbLoading: "Menyiapkan database lokal…",
+  nativeDbError: "Database lokal gagal dibuka.",
+  nativeDbErrorHint: "Data tidak berubah. Coba lagi.",
 } as const;
 
 export type Strings = typeof strings;

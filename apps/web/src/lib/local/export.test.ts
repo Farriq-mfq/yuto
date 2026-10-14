@@ -78,7 +78,7 @@ describe("local backup export/import", () => {
     await target.login("local-noop");
     const before = await target.getAccountsSummary();
     expect(before.accounts).toHaveLength(0);
-    importBackup(targetDb, revived);
+    await importBackup(targetDb, revived);
 
     expect(JSON.stringify(await target.getAccountsSummary())).toBe(
       JSON.stringify(await source.getAccountsSummary()),
@@ -105,13 +105,13 @@ describe("local backup export/import", () => {
   test("importBackup rejects unknown versions and garbage", async () => {
     const targetDb = await createLocalDatabase(":memory:");
     const target = new LocalDataSource(targetDb);
-    expect(() => importBackup(targetDb, { formatVersion: 2 })).toThrow(
+    await expect(importBackup(targetDb, { formatVersion: 2 })).rejects.toThrow(
       /Versi backup tidak didukung/,
     );
-    expect(() => importBackup(targetDb, null)).toThrow(
+    await expect(importBackup(targetDb, null)).rejects.toThrow(
       /Format backup tidak valid/,
     );
-    expect(() =>
+    await expect(
       importBackup(targetDb, {
         formatVersion: 1,
         exportedAt: new Date().toISOString(),
@@ -119,7 +119,7 @@ describe("local backup export/import", () => {
         categories: [],
         transactions: [],
       }),
-    ).toThrow(/Format backup tidak valid/);
+    ).rejects.toThrow(/Format backup tidak valid/);
     // DB tetap utuh (seed) setelah import gagal.
     expect((await target.getCategories()).length).toBeGreaterThan(0);
   });
