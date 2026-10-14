@@ -52,7 +52,9 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          # why: capacitor-android (cordova-android 14) compiles with
+          # source/target release 21 — JDK 17 gagal "invalid source release".
+          java-version: "21"
           cache: gradle
       # why: android-actions/setup-android@v3 memanggil sdkmanager untuk
       # paket usang `tools` sehingga gagal di runner (exit 1). Install manual
