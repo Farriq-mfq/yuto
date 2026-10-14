@@ -9,6 +9,7 @@ import { Shell } from "./App";
 import { PwaUpdatePrompt } from "./components/PwaUpdatePrompt";
 import { Toaster } from "./components/ui/sonner";
 import "./index.css";
+import { DataSourceProvider } from "./lib/datasourceContext";
 import { applyThemePreference, THEME_STORAGE_KEY } from "./lib/theme";
 import Home from "./pages/Home";
 import Activity from "./pages/Activity";
@@ -42,6 +43,7 @@ if (!root) throw new Error("Missing #root element");
 createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
+      <DataSourceProvider>
       <BrowserRouter>
         <PwaUpdatePrompt />
         <Toaster position="top-center" />
@@ -65,6 +67,7 @@ createRoot(root).render(
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+      </DataSourceProvider>
     </QueryClientProvider>
   </StrictMode>,
 );

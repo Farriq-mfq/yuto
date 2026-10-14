@@ -26,18 +26,16 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TransferIcon, TrashIcon } from "@/icons";
-import { api, isUnauthorized } from "../lib/api";
+import { isUnauthorized } from "../lib/datasource";
+import { useDataSource } from "../lib/datasourceContext";
 import { formatDateTimeJakarta, formatRupiah } from "../lib/format";
-import {
-  fetchAccountsSummary,
-  fetchRecentTransfers,
-} from "../lib/queries";
 import { strings } from "../strings";
 
 const HISTORY_LIMIT = 20;
 
 export default function Transfer() {
   const navigate = useNavigate();
+  const dataSource = useDataSource();
   const queryClient = useQueryClient();
   const [fromId, setFromId] = useState("");
   const [toId, setToId] = useState("");
@@ -51,12 +49,12 @@ export default function Transfer() {
 
   const summary = useQuery({
     queryKey: ["accounts", "summary"],
-    queryFn: fetchAccountsSummary,
+    queryFn: () => dataSource.getAccountsSummary(),
     retry: false,
   });
   const history = useQuery({
     queryKey: ["transfers", "recent"],
-    queryFn: () => fetchRecentTransfers(HISTORY_LIMIT),
+    queryFn: () => dataSource.getRecentTransfers(HISTORY_LIMIT),
     retry: false,
   });
 
@@ -96,15 +94,16 @@ export default function Transfer() {
     setPending(true);
     setServerError(null);
     const trimmedNote = note.trim();
-    const { error } = await api.api.transfers.post({
-      fromAccountId: fromId,
-      toAccountId: toId,
-      amount,
-      ...(trimmedNote === "" ? {} : { note: trimmedNote }),
-      occurredAt: new Date().toISOString(),
-    });
-    setPending(false);
-    if (error) {
+    try {
+      await dataSource.createTransfer({
+        fromAccountId: fromId,
+        toAccountId: toId,
+        amount,
+        ...(trimmedNote === "" ? {} : { note: trimmedNote }),
+        occurredAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      setPending(false);
       if (isUnauthorized(error)) {
         navigate("/login", { replace: true });
         return;
@@ -112,6 +111,7 @@ export default function Transfer() {
       setServerError(strings.saveFailed);
       return;
     }
+    setPending(false);
     await queryClient.invalidateQueries({ queryKey: ["accounts"] });
     await queryClient.invalidateQueries({ queryKey: ["transfers"] });
     navigate("/wallet", { replace: true });
@@ -121,9 +121,10 @@ export default function Transfer() {
     if (deleting || deleteId === null) return;
     setDeleting(true);
     setDeleteError(false);
-    const { error } = await api.api.transfers({ id: deleteId }).delete();
-    setDeleting(false);
-    if (error) {
+    try {
+      await dataSource.deleteTransfer(deleteId);
+    } catch (error) {
+      setDeleting(false);
       if (isUnauthorized(error)) {
         navigate("/login", { replace: true });
         return;
@@ -132,6 +133,7 @@ export default function Transfer() {
       setDeleteError(true);
       return;
     }
+    setDeleting(false);
     setDeleteId(null);
     await queryClient.invalidateQueries({ queryKey: ["accounts"] });
     await queryClient.invalidateQueries({ queryKey: ["transfers"] });

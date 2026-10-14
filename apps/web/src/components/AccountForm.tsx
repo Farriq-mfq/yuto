@@ -16,7 +16,7 @@ import {
   brandKeyFor,
   listInstitutions,
 } from "../brands";
-import type { AccountType } from "../lib/queries";
+import type { AccountType } from "../lib/datasource";
 import { strings } from "../strings";
 import { AmountField } from "./AmountField";
 

@@ -16,10 +16,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { isUnauthorized } from "../lib/api";
+import { isUnauthorized } from "../lib/datasource";
+import { useDataSource } from "../lib/datasourceContext";
 import { formatRupiah } from "../lib/format";
 import { useHideBalance } from "../lib/hideBalance";
-import { fetchAccountsSummary, type AccountType } from "../lib/queries";
+import { type AccountType } from "../lib/datasource";
 import { strings } from "../strings";
 
 const TYPE_LABELS: Record<AccountType, string> = {
@@ -42,10 +43,11 @@ const FALLBACK_ICONS = {
 } as const;
 
 export default function Wallet() {
+  const dataSource = useDataSource();
   const [hidden, toggleHidden] = useHideBalance();
   const summary = useQuery({
     queryKey: ["accounts", "summary"],
-    queryFn: fetchAccountsSummary,
+    queryFn: () => dataSource.getAccountsSummary(),
     retry: false,
   });
 

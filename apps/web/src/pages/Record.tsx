@@ -8,29 +8,27 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { api, isUnauthorized } from "../lib/api";
+import { isUnauthorized } from "../lib/datasource";
+import { useDataSource } from "../lib/datasourceContext";
 import { nowDateTimeLocalJakarta } from "../lib/format";
-import {
-  fetchAccountsSummary,
-  fetchCategories,
-} from "../lib/queries";
 import { locationPayload } from "../lib/location";
 import { strings } from "../strings";
 
 export default function Record() {
   const navigate = useNavigate();
+  const dataSource = useDataSource();
   const queryClient = useQueryClient();
   const [pending, setPending] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   const summary = useQuery({
     queryKey: ["accounts", "summary"],
-    queryFn: fetchAccountsSummary,
+    queryFn: () => dataSource.getAccountsSummary(),
     retry: false,
   });
   const categories = useQuery({
     queryKey: ["categories"],
-    queryFn: fetchCategories,
+    queryFn: () => dataSource.getCategories(),
     retry: false,
   });
 
@@ -62,24 +60,25 @@ export default function Record() {
     if (pending) return;
     setPending(true);
     setServerError(null);
-    const { error } = await api.api.transactions.post({
-      accountId: values.accountId,
-      categoryId: values.categoryId,
-      kind: values.kind,
-      title: values.title,
-      amount: values.amount,
-      occurredAt: values.occurredAtIso,
-      ...(values.note === "" ? {} : { note: values.note }),
-      // Lokasi opsional: pin + nama; address tak dikirim terpisah.
-      ...locationPayload({
-        latitude: values.latitude,
-        longitude: values.longitude,
-        locationName: values.locationName,
-      }),
-      ...(values.items.length === 0 ? {} : { items: values.items }),
-    });
-    setPending(false);
-    if (error) {
+    try {
+      await dataSource.createTransaction({
+        accountId: values.accountId,
+        categoryId: values.categoryId,
+        kind: values.kind,
+        title: values.title,
+        amount: values.amount,
+        occurredAt: values.occurredAtIso,
+        ...(values.note === "" ? {} : { note: values.note }),
+        // Lokasi opsional: pin + nama; address tak dikirim terpisah.
+        ...locationPayload({
+          latitude: values.latitude,
+          longitude: values.longitude,
+          locationName: values.locationName,
+        }),
+        ...(values.items.length === 0 ? {} : { items: values.items }),
+      });
+    } catch (error) {
+      setPending(false);
       if (isUnauthorized(error)) {
         navigate("/login", { replace: true });
         return;
@@ -87,6 +86,7 @@ export default function Record() {
       setServerError(strings.saveFailed);
       return;
     }
+    setPending(false);
     await queryClient.invalidateQueries({ queryKey: ["transactions"] });
     await queryClient.invalidateQueries({ queryKey: ["accounts"] });
     navigate("/", { replace: true });

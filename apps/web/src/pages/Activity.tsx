@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { isUnauthorized } from "../lib/api";
+import { isUnauthorized } from "../lib/datasource";
+import { useDataSource } from "../lib/datasourceContext";
 import {
   currentMonthJakarta,
   dayKeyJakarta,
@@ -18,10 +19,6 @@ import {
   formatTimeJakarta,
   localDateFromDatePart,
 } from "../lib/format";
-import {
-  fetchDayTransactions,
-  fetchMonthTransactions,
-} from "../lib/queries";
 import { strings } from "../strings";
 
 function monthKeyOfDay(day: string): string {
@@ -34,19 +31,20 @@ function monthKeyOfDay(day: string): string {
  * disinkron dua arah (navigasi bawaan Calendar + pilihan tanggal).
  */
 export default function Activity() {
+  const dataSource = useDataSource();
   const [selected, setSelected] = useState(() => dayKeyJakarta(new Date()));
   const [month, setMonth] = useState(() => monthKeyOfDay(selected));
 
   const day = useQuery({
     queryKey: ["transactions", "day", selected],
-    queryFn: () => fetchDayTransactions(selected),
+    queryFn: () => dataSource.getDayTransactions(selected),
     retry: false,
   });
   // shortcut: penanda hari bertitik memakai daftar bulan yang sudah
   // di-fetch untuk kalender; gagal dimuat = tanpa penanda (tak blokir).
   const monthTx = useQuery({
     queryKey: ["transactions", month],
-    queryFn: () => fetchMonthTransactions(month),
+    queryFn: () => dataSource.getMonthTransactions(month),
     retry: false,
   });
 
