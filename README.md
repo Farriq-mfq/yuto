@@ -8,6 +8,12 @@ Yuto ("juta" dalam bahasa Jawa) adalah pencatat keuangan pribadi yang di-hosting
 
 Syarat: **Docker + Docker Compose**. Tidak perlu Bun/Node untuk instalasi produksi.
 
+Fitur: dompet multi-akun (bank, e-wallet, tunai) dengan logo brand; catat
+transaksi + pratinjau saldo; transfer antar akun; kalender aktivitas;
+laporan per kategori (donat + bar + persen + change vs bulan lalu); PWA
+(offline + install di HP); aplikasi Android mandiri (SQLite terenkripsi,
+kunci biometrik).
+
 ## Instalasi
 
 ```bash
@@ -40,6 +46,19 @@ Satu pemilik, tanpa registrasi. Semua halaman kecuali login butuh sesi. Untuk ga
 # edit YUTO_PASSWORD di .env, lalu:
 docker compose up -d
 ```
+
+## Pasang di HP
+
+Dua cara, pilih satu:
+
+**PWA (disarankan untuk iOS).** Buka alamat HTTPS (atau `localhost`)
+di browser HP, lalu Add to Home Screen (Android Chrome: prompt install /
+menu; iPhone Safari: Share → Add to Home Screen). Berjalan standalone
+dengan ikon Yuto; offline menampilkan pesan dan tidak memakai data basi;
+update aplikasi masuk lewat toast "Versi baru tersedia". Alamat HTTP
+polos di LAN **tidak bisa** di-install.
+
+**APK Android.** Lihat [Aplikasi Android](#aplikasi-android) di bawah.
 
 ## HTTPS di balik reverse proxy
 
