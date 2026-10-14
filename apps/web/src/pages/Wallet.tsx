@@ -8,6 +8,7 @@ import {
   EyeOffIcon,
   LandmarkIcon,
   PlusIcon,
+  RefreshIcon,
   TransferIcon,
   WalletIcon,
 } from "@/icons";
@@ -66,22 +67,32 @@ export default function Wallet() {
     >
       <div className="flex items-center justify-between gap-3">
         <h1 className="font-display text-xl font-bold">{strings.walletTitle}</h1>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={toggleHidden}
-          aria-label={hidden ? strings.showBalance : strings.hideBalance}
-          title={hidden ? strings.showBalance : strings.hideBalance}
-          aria-pressed={hidden}
-          className="size-11 shrink-0"
-        >
-          {hidden ? (
-            <EyeOffIcon size={20} aria-hidden="true" />
-          ) : (
-            <EyeIcon size={20} aria-hidden="true" />
-          )}
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <Link
+            to="/sync"
+            aria-label={strings.syncTitle}
+            title={strings.syncTitle}
+            className="flex size-11 items-center justify-center rounded-md border border-input bg-background text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <RefreshIcon size={20} aria-hidden="true" />
+          </Link>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={toggleHidden}
+            aria-label={hidden ? strings.showBalance : strings.hideBalance}
+            title={hidden ? strings.showBalance : strings.hideBalance}
+            aria-pressed={hidden}
+            className="size-11 shrink-0"
+          >
+            {hidden ? (
+              <EyeOffIcon size={20} aria-hidden="true" />
+            ) : (
+              <EyeIcon size={20} aria-hidden="true" />
+            )}
+          </Button>
+        </div>
       </div>
 
       {summary.isPending ? (

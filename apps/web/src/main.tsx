@@ -24,6 +24,7 @@ import TransactionDetail from "./pages/TransactionDetail";
 import TransactionEdit from "./pages/TransactionEdit";
 import Transfer from "./pages/Transfer";
 import Wallet from "./pages/Wallet";
+import Sync from "./pages/Sync";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +92,7 @@ function RoutedApp() {
           />
           <Route path="/activity" element={<Activity />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/sync" element={<Sync />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

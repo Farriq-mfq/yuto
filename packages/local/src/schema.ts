@@ -161,3 +161,20 @@ export const transfers = sqliteTable(
     check("transfers_dirty_01", sql`${t.dirty} IN (0, 1)`),
   ],
 );
+
+// Sync cursor + paired device for the pull protocol (Phase 11 part 3).
+// Single-row table: the engine always uses id = 1 (enforced by CHECK, not by
+// omitting the key — an explicit row keeps INSERT OR IGNORE / upsert simple).
+// cursor = highest server_seq applied via /sync/pull (0 = never pulled).
+// device_id = server device id from /sync/pair (NULL = unpaired). The bearer
+// token itself is NEVER stored here — it lives in secure storage (see
+// apps/web/src/lib/sync/tokenStore.ts).
+export const syncState = sqliteTable(
+  "sync_state",
+  {
+    id: integer("id").primaryKey(),
+    cursor: integer("cursor").notNull().default(0),
+    deviceId: text("device_id"),
+  },
+  (t) => [check("sync_state_single_row", sql`${t.id} = 1`)],
+);

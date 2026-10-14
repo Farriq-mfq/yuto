@@ -5,7 +5,7 @@ import { connect, migrate } from "./migrate";
 function freshDb(): Database {
   const db = connect(":memory:");
   const applied = migrate(db);
-  expect(applied).toHaveLength(2);
+  expect(applied).toHaveLength(3);
   return db;
 }
 
@@ -36,6 +36,7 @@ describe("local schema", () => {
     expect(tables).toEqual([
       "accounts",
       "categories",
+      "sync_state",
       "transaction_items",
       "transactions",
       "transfers",
@@ -117,6 +118,20 @@ describe("local schema", () => {
     expect(() =>
       db.exec(`INSERT INTO "categories" ("id", "slug", "name", "kind", "icon", "color")
         VALUES ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'expense-shopping', 'Belanja 2', 'expense', 'x', '#000');`),
+    ).toThrow();
+  });
+
+  test("sync_state holds a single row (id=1) with cursor default 0", () => {
+    const db = freshDb();
+    db.exec(`INSERT INTO "sync_state" ("id") VALUES (1);`);
+    const row = db
+      .query<{ id: number; cursor: number; device_id: string | null }, []>(
+        `SELECT "id", "cursor", "device_id" FROM "sync_state" WHERE "id" = 1;`,
+      )
+      .get();
+    expect(row).toMatchObject({ id: 1, cursor: 0, device_id: null });
+    expect(() =>
+      db.exec(`INSERT INTO "sync_state" ("id") VALUES (2);`),
     ).toThrow();
   });
 

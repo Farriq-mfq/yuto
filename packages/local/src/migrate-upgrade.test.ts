@@ -101,9 +101,10 @@ describe("upgrade v1 -> sync-ready", () => {
     db.exec(LEGACY_ROWS);
 
     const applied = migrate(db);
-    // v1 tables predate the journal, so 0000 baselines silently; only the
-    // sync-ready migration runs.
-    expect(applied).toEqual(["0001_handy_preak.sql"]);
+    // v1 tables predate the journal, so 0000 baselines silently; the newer
+    // migrations (sync-ready columns, then sync_state) run in order.
+    expect(applied).toEqual(["0001_handy_preak.sql", "0002_loose_iron_patriot.sql"]);
+    expect(columnsOf(db, "sync_state")).toEqual(["id", "cursor", "device_id"]);
 
     // Sync columns exist on every table.
     for (const table of ["accounts", "categories", "transactions", "transaction_items", "transfers"]) {
