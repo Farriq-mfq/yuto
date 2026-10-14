@@ -30,7 +30,17 @@ export function NativeDataSourceGate({ children }: { children: React.ReactNode }
       .then((dataSource) => {
         if (!cancelled) setState({ status: "ready", dataSource });
       })
-      .catch(() => {
+      .catch((error) => {
+        // why: pesan UI sengaja umum (tidak membocorkan detail teknis ke
+        // user), tapi error asli dicatat ke console agar terlihat di
+        // logcat (`adb logcat`) saat debug di perangkat. WAJIB string
+        // (message/stack), bukan objek — console Capacitor me-render objek
+        // sebagai "[object Object]" yang tak berguna.
+        const detail =
+          error instanceof Error
+            ? (error.stack ?? error.message)
+            : JSON.stringify(error);
+        console.error(`[yuto] native database failed to open: ${detail}`);
         if (!cancelled) setState({ status: "error" });
       });
     return () => {

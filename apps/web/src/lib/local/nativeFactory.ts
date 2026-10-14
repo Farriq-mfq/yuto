@@ -22,6 +22,17 @@ const DATABASE_NAME = "yuto";
 
 let cached: Promise<LocalDataSource> | null = null;
 
+/** Plugin melaporkan koneksi ganda lewat pesan ini (bukan kode error). */
+function isAlreadyExistsError(error: unknown): boolean {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : JSON.stringify(error);
+  return message.includes("already exists");
+}
+
 /**
  * Buka (atau buat) database SQLite persisten di perangkat + migrate + seed,
  * lalu bungkus dengan LocalDataSource yang sama seperti dipakai test.
@@ -45,10 +56,27 @@ async function openNativeDataSource(): Promise<LocalDataSource> {
   const sqlite = new SQLiteConnection(CapacitorSQLite);
   const openMode = await ensureDatabaseEncryption(sqlite);
   const already = await sqlite.isConnection(DATABASE_NAME, false);
-  const conn =
-    already.result === true
-      ? await sqlite.retrieveConnection(DATABASE_NAME, false)
-      : await sqlite.createConnection(DATABASE_NAME, true, openMode, 1, false);
+  // why: bila percobaan sebelumnya gagal SETELAH createConnection (mis.
+  // migrasi/seed), objek koneksi masih terdaftar di plugin sementara
+  // isConnection bisa lapor false — retry "Coba lagi" akan selalu gagal
+  // "Connection already exists". Fallback: ambil koneksi yang ada.
+  let conn: Awaited<ReturnType<typeof sqlite.retrieveConnection>>;
+  if (already.result === true) {
+    conn = await sqlite.retrieveConnection(DATABASE_NAME, false);
+  } else {
+    try {
+      conn = await sqlite.createConnection(
+        DATABASE_NAME,
+        true,
+        openMode,
+        1,
+        false,
+      );
+    } catch (error) {
+      if (!isAlreadyExistsError(error)) throw error;
+      conn = await sqlite.retrieveConnection(DATABASE_NAME, false);
+    }
+  }
   await conn.open();
   // why: pragma ini tak persisten; tiap koneksi wajib set agar FK
   // restrict/cascade benar-benar jalan (aturan yang sama di connect() bun).
