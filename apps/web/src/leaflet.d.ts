@@ -29,6 +29,7 @@ declare module "leaflet" {
 
   export interface TileLayer {
     addTo(map: Map): TileLayer;
+    on(type: "tileerror", fn: () => void): TileLayer;
   }
 
   export interface TileLayerOptions {

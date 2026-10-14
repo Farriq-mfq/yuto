@@ -117,3 +117,23 @@ The API refuses to start if `JWT_SECRET` is missing or shorter than 32 chars, if
 - Export/import (`formatVersion: 1` JSON: accounts, categories,
   transactions with items, transfers incl. tombstones) replaces backup for
   standalone installs.
+- Android hardening (native shell only, web/PWA unaffected):
+  - Database encrypted with SQLCipher (`CapacitorSQLite.androidIsEncryption`).
+    A random 256-bit key is generated once at first DB creation and kept by
+    the plugin in `EncryptedSharedPreferences` (Android Keystore
+    `MasterKey.AES256_GCM`); JS never sees the key. Pre-encryption plaintext
+    DBs are encrypted in place on next open (mode `"encryption"` once, then
+    `"secret"`). No extra secure-storage plugin needed.
+  - App lock via `@aparajita/capacitor-biometric-auth` (MIT, Capacitor 8;
+    `@capgo/capacitor-native-biometric` rejected: CVE-2026-56294 auth
+    bypass) + `@capacitor/app` `appStateChange`. Biometric first, device
+    credential (PIN/pattern/password) fallback via `allowDeviceCredential`.
+    No biometric AND no screen lock = app refuses to run (fail-closed, never
+    silently unlocked). Re-lock after 2 min in background
+    (`APP_LOCK_TIMEOUT_MS`); the lock covers UI only, the DB connection
+    stays open (SQLCipher protects the file at rest, not RAM).
+  - `allowBackup=false` (whole app, not a DB-only exclusion rule): the
+    encrypted DB backup would be unrestorable anyway (Keystore keys never
+    survive backup/restore), and exclusion rules risk leaking the key or DB
+    to cloud backup if mis-maintained. Owner copies data out via
+    export instead.

@@ -4,7 +4,9 @@ import L, {
   type LeafletMouseEvent,
   type Marker,
 } from "leaflet";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { MapOffIcon } from "@/icons";
+import { useOnline } from "../hooks/useOnline";
 import {
   JAKARTA_CENTER,
   MAP_ZOOM,
@@ -19,11 +21,20 @@ interface LocationPickerProps {
   onPick: (latitude: number, longitude: number) => void;
 }
 
+// why: batas 3 — satu-dua tile gagal bisa glitch sesaat (zoom cepat,
+// tile 404), tiga gagal beruntun = sumber tile/offline bermasalah.
+const TILE_ERROR_THRESHOLD = 3;
+
 /**
  * Peta kecil OpenStreetMap: ketuk untuk menaruh pin, seret pin untuk
  * menggeser. Modul ini di-load malas (React.lazy) dari TransactionForm dan
  * hanya di-render bila `mapEnabled`, sehingga MAP_ENABLED=false berarti
  * tidak ada request tile sama sekali.
+ *
+ * Bila offline (navigator.onLine) ATAU tile berulang gagal dimuat
+ * (event `tileerror` Leaflet — sinyal umum koneksi putus di tengah jalan),
+ * peta diganti panel pesan offline; nama lokasi manual (di TransactionForm)
+ * tetap bisa diisi.
  */
 export function LocationPicker({
   latitude,
@@ -34,22 +45,33 @@ export function LocationPicker({
   const markerRef = useRef<Marker | null>(null);
   const onPickRef = useRef(onPick);
   onPickRef.current = onPick;
-  // Pin awal (mode Edit) dibaca sekali saat peta dibuat.
-  const initialRef = useRef({ latitude, longitude });
+  // why: dibaca via ref agar effect re-init (offline → online) memakai pin
+  // terkini dari parent, bukan nilai mount pertama.
+  const liveRef = useRef({ latitude, longitude });
+  liveRef.current = { latitude, longitude };
+  const online = useOnline();
+  const [tileErrors, setTileErrors] = useState(0);
+  const showFallback = !online || tileErrors >= TILE_ERROR_THRESHOLD;
 
   useEffect(() => {
+    if (showFallback) return;
     const el = containerRef.current;
     if (!el) return;
-    const start = initialRef.current;
+    const start = liveRef.current;
     const center: LatLngExpression =
       start.latitude !== null && start.longitude !== null
         ? [start.latitude, start.longitude]
         : [JAKARTA_CENTER.lat, JAKARTA_CENTER.lng];
     const map = L.map(el).setView(center, MAP_ZOOM);
-    L.tileLayer(OSM_TILE_URL, {
+    const tiles = L.tileLayer(OSM_TILE_URL, {
       maxZoom: 19,
       attribution: OSM_ATTRIBUTION,
-    }).addTo(map);
+    });
+    // why: tileerror = satu tile gagal (offline tengah jalan / server tile
+    // mati); hitung, bukan sekali-gagal-langsung-ganti (glitch sesaat).
+    const handleTileError = () => setTileErrors((n) => n + 1);
+    tiles.on("tileerror", handleTileError);
+    tiles.addTo(map);
 
     function placeOrMove(lat: number, lng: number) {
       const marker = markerRef.current;
@@ -78,11 +100,36 @@ export function LocationPicker({
     return () => {
       window.clearTimeout(timer);
       map.off("click", handleClick);
-      // Bersihkan peta saat unmount agar tak leak antar navigasi.
+      // Bersihkan peta saat unmount/ganti fallback agar tak leak.
       map.remove();
       markerRef.current = null;
     };
-  }, []);
+    // why: re-init HANYA saat transisi tampil/sembunyi fallback (offline ⇄
+    // online, gagal ⇄ coba-lagi); nilai live dibaca via ref di atas.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showFallback]);
+
+  if (showFallback) {
+    return (
+      <div
+        role="status"
+        className="flex h-[240px] w-full flex-col items-center justify-center gap-2 rounded-xl border border-border bg-muted/40 px-6 text-center"
+      >
+        <MapOffIcon size={32} aria-hidden="true" className="text-muted-foreground" />
+        <p className="text-sm font-medium">{strings.locationOfflineTitle}</p>
+        <p className="text-sm text-muted-foreground">
+          {strings.locationOfflineHint}
+        </p>
+        <button
+          type="button"
+          onClick={() => setTileErrors(0)}
+          className="mt-1 min-h-11 rounded-md border border-input bg-background px-4 text-sm font-medium"
+        >
+          {strings.locationRetryMap}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div

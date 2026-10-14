@@ -12,6 +12,7 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@aparajita/capacitor-biometric-auth": "^8.0.2",
     "@base-ui/react": "^1.9.0",
     "@capacitor-community/sqlite": "^8.1.1",
     "@capacitor/android": "^8.5.3",

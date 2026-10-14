@@ -43,11 +43,12 @@ async function openNativeDataSource(): Promise<LocalDataSource> {
     "@capacitor-community/sqlite"
   );
   const sqlite = new SQLiteConnection(CapacitorSQLite);
+  const openMode = await ensureDatabaseEncryption(sqlite);
   const already = await sqlite.isConnection(DATABASE_NAME, false);
   const conn =
     already.result === true
       ? await sqlite.retrieveConnection(DATABASE_NAME, false)
-      : await sqlite.createConnection(DATABASE_NAME, false, "no-encryption", 1, false);
+      : await sqlite.createConnection(DATABASE_NAME, true, openMode, 1, false);
   await conn.open();
   // why: pragma ini tak persisten; tiap koneksi wajib set agar FK
   // restrict/cascade benar-benar jalan (aturan yang sama di connect() bun).
@@ -91,6 +92,40 @@ async function openNativeDataSource(): Promise<LocalDataSource> {
   // yang identik di kedua driver dan semuanya di-await (lihat catatan
   // transaksi di localDataSource.ts), sehingga database proxy valid di runtime.
   return new LocalDataSource(db as unknown as LocalDb);
+}
+
+/**
+ * Pastikan database terenkripsi SQLCipher. Kunci 256-bit dibuat acak SEKALI
+ * (saat database pertama dibuat) dan disimpan plugin di
+ * EncryptedSharedPreferences yang kuncinya (MasterKey AES256-GCM) hidup di
+ * Android Keystore — JS tak pernah memegang/melihat kunci. Setiap open()
+ * native mengambil passphrase dari Keystore di sisi Java.
+ *
+ * Mengembalikan mode open untuk createConnection:
+ * - "secret": buka database terenkripsi (atau buat baru terenkripsi).
+ * - "encryption": file plaintext lama (scaffold pra-enkripsi) → enkripsi
+ *   in-place sekali jalan; open berikutnya kembali "secret".
+ */
+async function ensureDatabaseEncryption(
+  sqlite: import("@capacitor-community/sqlite").SQLiteConnection,
+): Promise<"secret" | "encryption"> {
+  const stored = await sqlite.isSecretStored();
+  if (stored.result !== true) {
+    const bytes = crypto.getRandomValues(new Uint8Array(32));
+    const passphrase = Array.from(bytes, (byte) =>
+      byte.toString(16).padStart(2, "0"),
+    ).join("");
+    await sqlite.setEncryptionSecret(passphrase);
+    return "secret";
+  }
+  try {
+    const encrypted = await sqlite.isDatabaseEncrypted(DATABASE_NAME);
+    return encrypted.result === true ? "secret" : "encryption";
+  } catch {
+    // why: isDatabaseEncrypted throw bila file belum ada (fresh install
+    // setelah secret tersimpan) — buat baru langsung terenkripsi.
+    return "secret";
+  }
 }
 
 /**

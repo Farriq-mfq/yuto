@@ -186,6 +186,23 @@ export const strings = {
   nativeDbLoading: "Menyiapkan database lokal…",
   nativeDbError: "Database lokal gagal dibuka.",
   nativeDbErrorHint: "Data tidak berubah. Coba lagi.",
+  // --- Kunci aplikasi (hanya build Android/Capacitor) ---
+  lockTitle: "Yuto terkunci",
+  lockSubtitle:
+    "Buka kunci dengan sidik jari, wajah, atau PIN perangkat untuk melihat data keuanganmu.",
+  lockUnlockButton: "Buka kunci",
+  lockChecking: "Memeriksa kunci perangkat…",
+  lockAuthFailed: "Autentikasi gagal. Coba lagi.",
+  lockTooManyAttempts:
+    "Terlalu banyak percobaan gagal. Tunggu sebentar lalu coba lagi.",
+  lockNoCredentialTitle: "Kunci layar belum diatur",
+  lockNoCredentialHint:
+    "Atur PIN, pola, atau kata sandi di Pengaturan perangkat, lalu ketuk Coba lagi. Yuto tidak berjalan tanpa kunci perangkat.",
+  // --- Peta offline (umum: PWA + native) ---
+  locationOfflineTitle: "Peta tidak tersedia offline",
+  locationOfflineHint:
+    "Sambungkan internet untuk memuat peta, atau isi nama lokasi manual di bawah.",
+  locationRetryMap: "Coba muat peta",
 } as const;
 
 export type Strings = typeof strings;

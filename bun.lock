@@ -28,6 +28,7 @@
       "name": "@yuto/web",
       "version": "0.1.0",
       "dependencies": {
+        "@aparajita/capacitor-biometric-auth": "8.0.2",
         "@base-ui/react": "^1.9.0",
         "@capacitor-community/sqlite": "^8.1.1",
         "@capacitor/android": "^8.5.3",
@@ -91,6 +92,8 @@
     },
   },
   "packages": {
+    "@aparajita/capacitor-biometric-auth": ["@aparajita/capacitor-biometric-auth@8.0.2", "", { "dependencies": { "@capacitor/android": "^6.1.0", "@capacitor/app": "^6.0.0", "@capacitor/core": "^6.1.0", "@capacitor/ios": "^6.1.0" } }, "sha512-f5EHwJYkwQDM/FmoZoyOTmBs/3XEcYURZDUNyps9+Fn7WrgojtJuZP8GhfW7KrQGqCok+ctDd369nEAmNiTxfw=="],
+
     "@apideck/better-ajv-errors": ["@apideck/better-ajv-errors@0.3.7", "", { "dependencies": { "jsonpointer": "^5.0.1", "leven": "^3.1.0" }, "peerDependencies": { "ajv": ">=8" } }, "sha512-TajUJwGWbDwkCx/CZi7tRE8PVB7simCvKJfHUsSdvps+aTM/PDPP4gkLmKnc+x3CE//y9i/nj74GqdL/hwk7Iw=="],
 
     "@babel/code-frame": ["@babel/code-frame@7.29.7", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.29.7", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw=="],
@@ -298,6 +301,8 @@
     "@capacitor/cli": ["@capacitor/cli@8.5.3", "", { "dependencies": { "@ionic/cli-framework-output": "^2.2.8", "@ionic/utils-subprocess": "^3.0.1", "@ionic/utils-terminal": "^2.3.5", "commander": "^12.1.0", "debug": "^4.4.0", "env-paths": "^2.2.0", "fs-extra": "^11.2.0", "kleur": "^4.1.5", "native-run": "^2.0.3", "open": "^8.4.0", "plist": "^3.1.0", "prompts": "^2.4.2", "rimraf": "^6.0.1", "semver": "^7.6.3", "tar": "^7.5.3", "tslib": "^2.8.1", "xcode": "^3.0.1", "xml2js": "^0.6.2" }, "bin": { "cap": "bin/capacitor", "capacitor": "bin/capacitor" } }, "sha512-/G6xwna+p4GS3lthSdWN3OThCH2F85O0Ukdy8rv3oAXvgEMeyFgPEIA3PMAS++IkHwUuBYBAKOQJnZfcrh1n0w=="],
 
     "@capacitor/core": ["@capacitor/core@8.5.3", "", { "dependencies": { "tslib": "^2.1.0" } }, "sha512-oBE1oGuYE4ZzYYrulC75OuHdSsD6zLUy7d5o1tFwDLG4govGoubY15cxpiI5l0+q87Lm5p0bhbehMdzJg4aFag=="],
+
+    "@capacitor/ios": ["@capacitor/ios@6.2.2", "", { "peerDependencies": { "@capacitor/core": "^6.2.0" } }, "sha512-dc9upo3L5wSUVJBJnd7oRGGsiwB2rMe7ZF2bti8hvDVCAZeYMzzw8iqxuUc6cvGBhH2/LsORMBO51/vEQhdmHg=="],
 
     "@date-fns/tz": ["@date-fns/tz@1.5.0", "", {}, "sha512-lwYN/vDPeNRULcepoE/LO2Pgx+7/RV+S9ARfbc9lr2DtGkOD7pAiruHvbR1RX3Qyf6ja47EWJDMsNK5vK08DJg=="],
 
@@ -1741,6 +1746,12 @@
 
     "zod-to-json-schema": ["zod-to-json-schema@3.25.2", "", { "peerDependencies": { "zod": "^3.25.28 || ^4" } }, "sha512-O/PgfnpT1xKSDeQYSCfRI5Gy3hPf91mKVDuYLUHZJMiDFptvP41MSnWofm8dnCm0256ZNfZIM7DSzuSMAFnjHA=="],
 
+    "@aparajita/capacitor-biometric-auth/@capacitor/android": ["@capacitor/android@6.2.2", "", { "peerDependencies": { "@capacitor/core": "^6.2.0" } }, "sha512-JjIu1ryNE16PQTp51rb4NEygxP7cSCDMmUqx4f5f12xscKdGKTjO9bkEP3TroLnTa/J6p2QopIhRbrd3E/7DrA=="],
+
+    "@aparajita/capacitor-biometric-auth/@capacitor/app": ["@capacitor/app@6.0.3", "", { "peerDependencies": { "@capacitor/core": "^6.0.0" } }, "sha512-4gFUCbcVz0N/YYN32OBFerocWXslIv3Nc90gDiRsBkJc0plwK6kIUT6PKa5WtW2kfhteUeCVXQbvArH2fH+0Ug=="],
+
+    "@aparajita/capacitor-biometric-auth/@capacitor/core": ["@capacitor/core@6.2.2", "", { "dependencies": { "tslib": "^2.1.0" } }, "sha512-qEI3DcwJEPzhW+hVGKH8m4jbujtkdUiGkpMLHmpR8epACU7wEsV6NF8pCHzpsMYjc80oK7Cmpcw+MIienv/YRw=="],
+
     "@babel/core/semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
 
     "@babel/helper-compilation-targets/semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
@@ -1752,6 +1763,8 @@
     "@babel/preset-env/semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
 
     "@base-ui/utils/reselect": ["reselect@5.3.0", "", {}, "sha512-XGoLeRAVzUTcJ1qkxPQhDJyIZ5d6zzZD9nT7AEZOaaU9UbWclhycElmhO+VD5bFeLuzhPBaOV2oXC8uG35ZSpg=="],
+
+    "@capacitor/ios/@capacitor/core": ["@capacitor/core@6.2.2", "", { "dependencies": { "tslib": "^2.1.0" } }, "sha512-qEI3DcwJEPzhW+hVGKH8m4jbujtkdUiGkpMLHmpR8epACU7wEsV6NF8pCHzpsMYjc80oK7Cmpcw+MIienv/YRw=="],
 
     "@dotenvx/dotenvx/commander": ["commander@11.1.0", "", {}, "sha512-yPVavfyCcRhmorC7rWlkHn15b4wDVgVmBA7kV4QVBsF7kv/9TKJAbAXVTxvTnwP8HHKjRCJDClKbciiYS7p0DQ=="],
 
