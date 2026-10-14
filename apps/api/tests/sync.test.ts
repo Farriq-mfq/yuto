@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import postgres from "postgres";
 
 process.env.JWT_SECRET = "test-secret-that-is-long-enough-123456";
@@ -727,6 +727,18 @@ describe("sync pull", () => {
     const app = createApp();
     try {
       const { token } = await pairOk(app);
+      // why: baseline cursor agar test tahan terhadap baris yatim dari run
+      // lain yang terinterupsi (cursor bersifat relatif, bukan absolut).
+      const [a] = await db
+        .select({ m: sql<number | null>`max(${accounts.serverSeq})` })
+        .from(accounts);
+      const [t] = await db
+        .select({ m: sql<number | null>`max(${transactions.serverSeq})` })
+        .from(transactions);
+      const [r] = await db
+        .select({ m: sql<number | null>`max(${transfers.serverSeq})` })
+        .from(transfers);
+      const base = Math.max(a?.m ?? 0, t?.m ?? 0, r?.m ?? 0);
       const ids = [randomUUID(), randomUUID(), randomUUID()];
       await app.handle(
         bearer("/api/sync/push", token, {
@@ -735,15 +747,15 @@ describe("sync pull", () => {
         }),
       );
       const page1 = (await (
-        await app.handle(bearer("/api/sync/pull?since=0&limit=2", token))
+        await app.handle(bearer(`/api/sync/pull?since=${base}&limit=2`, token))
       ).json()) as PullBody;
-      expect(page1.accounts).toHaveLength(2);
-      expect(page1.cursor).toBeGreaterThan(0);
+      expect(page1.accounts.map((row) => row.id)).toEqual([ids[0], ids[1]]);
+      expect(page1.cursor).toBeGreaterThan(base);
       expect(Array.isArray(page1.categories)).toBe(true);
       const page2 = (await (
         await app.handle(bearer(`/api/sync/pull?since=${page1.cursor}`, token))
       ).json()) as PullBody;
-      expect(page2.accounts).toHaveLength(1);
+      expect(page2.accounts.map((row) => row.id)).toEqual([ids[2]]);
       const page3 = (await (
         await app.handle(bearer(`/api/sync/pull?since=${page2.cursor}`, token))
       ).json()) as PullBody;
