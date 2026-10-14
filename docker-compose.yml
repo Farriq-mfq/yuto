@@ -23,7 +23,8 @@ services:
 
   api:
     build:
-      context: ./apps/api
+      context: .
+      dockerfile: apps/api/Dockerfile
       # Default build target is the last stage (development with
       # --watch). Production must use the lean runtime stage.
       target: production

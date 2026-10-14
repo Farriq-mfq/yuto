@@ -3,9 +3,11 @@ import { db } from "../../db/client";
 import { categories, transactions } from "../../db/schema";
 import {
   JakartaTimeError,
+  categoryPercent,
+  changeVsPrevious,
   jakartaMonthRange,
   previousMonth,
-} from "../../lib/jakarta-time";
+} from "@yuto/core";
 
 export type ReportKind = "expense" | "income";
 
@@ -147,9 +149,9 @@ export async function getCategoryBreakdown(
         icon: row.icon,
         color: row.color,
         total: row.total,
-        percent: kindTotal === 0 ? 0 : (row.total * 100) / kindTotal,
+        percent: categoryPercent(row.total, kindTotal),
         previousTotal,
-        change: row.total - previousTotal,
+        change: changeVsPrevious(row.total, previousTotal),
       };
     })
     .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));

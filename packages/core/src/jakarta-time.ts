@@ -1,3 +1,5 @@
+// Pure Jakarta (WIB) time boundaries. Moved byte-identical from
+// apps/api/src/lib/jakarta-time.ts so every consumer shares one conversion.
 export type JakartaTimeFailure = "invalid-month" | "invalid-date";
 
 export class JakartaTimeError extends Error {

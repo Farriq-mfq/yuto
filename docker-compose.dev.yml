@@ -8,13 +8,15 @@
 services:
   api:
     build:
-      context: ./apps/api
+      context: .
+      dockerfile: apps/api/Dockerfile
       target: development
     # Replaces the prod migrate+seed+serve command. Run migrations once with:
     #   docker compose -f docker-compose.yml -f docker-compose.dev.yml exec api bunx drizzle-kit migrate
     command: ["bun", "--watch", "src/index.ts"]
     volumes:
-      - ./apps/api:/app
+      - ./apps/api:/app/apps/api
+      - ./packages/core:/app/packages/core
       - /app/node_modules # anonymous volume: keep image-installed deps
     ports:
       - "3000:3000"
@@ -30,6 +32,7 @@ services:
     command: ["bun", "run", "dev", "--host", "--port", "5173"]
     volumes:
       - ./apps/web:/app
+      - ./packages/core:/app/packages/core # nested mount: @yuto/core source for vite
       - /app/node_modules # anonymous volume: keep image-installed deps
     # NOTE: the base file also publishes 8080:80 and compose unions ports, so
     # that mapping still shows in `config` output. Nothing listens on :80 in dev.
