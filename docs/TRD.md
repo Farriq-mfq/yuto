@@ -137,3 +137,17 @@ The API refuses to start if `JWT_SECRET` is missing or shorter than 32 chars, if
     survive backup/restore), and exclusion rules risk leaking the key or DB
     to cloud backup if mis-maintained. Owner copies data out via
     export instead.
+- Android release signing (CI only, `.github/workflows/android.yml`):
+  - Every `v*.*.*` tag builds a signed release APK and attaches it as
+    `yuto-<tag>-release.apk` to the GitHub Release created by `release.yml`
+    (the Android workflow only uploads, never creates the release).
+  - Secrets (repo Settings > Secrets and variables > Actions; values held
+    by the owner, never committed): `ANDROID_KEYSTORE_BASE64` (base64 of
+    the release keystore), `KEYSTORE_PASSWORD`, `KEY_ALIAS`,
+    `KEY_PASSWORD`. Keystore generated once offline via `keytool
+    -genkeypair`; the full procedure lives in the workflow header comment.
+  - Signing is injected with `-Pandroid.injected.signing.*` Gradle
+    properties, so `app/build.gradle` carries no `signingConfigs` and no
+    secret touches a tracked file. The decoded keystore exists on the
+    runner only (`*.keystore`/`*.jks` are gitignored) and is deleted with
+    `if: always()` after the upload.

@@ -77,11 +77,11 @@ Order matters: each phase ends in something that runs and has tests.
 - Done when: the UI runs fully on `LocalDataSource` and every shared test passes on both engines.
 
 ## Phase 10: Android app (Capacitor)
-- [ ] Add Capacitor to `apps/web`; set a real `appId`; standalone build uses `LocalDataSource`; no login screen and no service worker in the native build.
-- [ ] App lock: biometric or device credential on open and after a background timeout; database encrypted with the key held in Android Keystore.
-- [ ] Turn off Android cloud auto-backup for the database (`allowBackup=false` or an exclusion rule); the owner uses export instead.
-- [ ] Map picker shows an offline message when tiles cannot load.
-- [ ] Tag release builds a signed APK in CI and attaches it to the GitHub Release; keystore only in GitHub Secrets, never committed.
+- [x] Add Capacitor to `apps/web`; set a real `appId`; standalone build uses `LocalDataSource`; no login screen and no service worker in the native build.
+- [x] App lock: biometric or device credential on open and after a background timeout; database encrypted with the key held in Android Keystore.
+- [x] Turn off Android cloud auto-backup for the database (`allowBackup=false` or an exclusion rule); the owner uses export instead.
+- [x] Map picker shows an offline message when tiles cannot load.
+- [x] Tag release builds a signed APK in CI and attaches it to the GitHub Release; keystore only in GitHub Secrets, never committed.
 - [ ] Real-device test: install, add data, kill and reopen, airplane mode, export/import, update over the previous version keeps data.
 - Done when: a signed APK installs, works offline (except map tiles), locks correctly, keeps data across updates, and round-trips export/import.
 
