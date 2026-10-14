@@ -60,5 +60,44 @@ Order matters: each phase ends in something that runs and has tests.
 - [x] README: install, installing on a phone (Add to Home Screen), HTTPS behind a reverse proxy, backup, restore, upgrade (commands from TRD section 7).
 - [x] Test the restore: dump from one stack, load into a fresh stack, compare balances.
 
+## Phase 8: Data layer (no behavior change)
+- [x] Define a `DataSource` interface in `apps/web` covering every call the UI makes (accounts, categories, transactions, transfers, reports).
+- [x] `HttpDataSource` wraps the Eden client. Every screen gets data through one provider; no screen imports Eden directly.
+- [x] Move pure logic to `packages/core` (month range in Asia/Jakarta, report percent and change, item-sum and kind checks, rupiah helpers). API and web both import it (second real consumer, so the shared package is now justified).
+- [x] Write the behavior tests once against `DataSource` (balance after create/edit/delete, transfer rollback, category kept on edit, report totals, month boundary at 00:00 Jakarta) and run them against the real API + Postgres.
+- Done when: the app behaves exactly as before and all tests pass.
+
+## Phase 9: On-device data engine
+- [ ] Drizzle SQLite schema mirroring `docs/BACKGROUND_SCHEMA.md` (integer rupiah, same checks). Sync-ready from day one: UUID ids generated on the client; `updated_at` and `deleted_at` (soft delete) on accounts, transactions, transaction_items, and transfers; a `dirty` flag; a stable `slug` on categories. Document it in the same file.
+- [ ] `LocalDataSource` implementing `DataSource` on SQLite: same balance SQL but ignoring deleted rows, deletes are soft deletes, transfers inside one SQLite transaction, categories seeded by slug.
+- [ ] Run the same behavior tests against `LocalDataSource` using `bun:sqlite` in CI. Both implementations must pass the identical suite.
+- [ ] On-device migrations bundled with the app and run on start; test upgrading a database created by the previous version.
+- [ ] Export and import (backup replacement): one file with a format version; test export -> fresh install -> import -> identical balances.
+- [ ] Docs: add a "Standalone edition" section to PRD and TRD.
+- Done when: the UI runs fully on `LocalDataSource` and every shared test passes on both engines.
+
+## Phase 10: Android app (Capacitor)
+- [ ] Add Capacitor to `apps/web`; set a real `appId`; standalone build uses `LocalDataSource`; no login screen and no service worker in the native build.
+- [ ] App lock: biometric or device credential on open and after a background timeout; database encrypted with the key held in Android Keystore.
+- [ ] Turn off Android cloud auto-backup for the database (`allowBackup=false` or an exclusion rule); the owner uses export instead.
+- [ ] Map picker shows an offline message when tiles cannot load.
+- [ ] Tag release builds a signed APK in CI and attaches it to the GitHub Release; keystore only in GitHub Secrets, never committed.
+- [ ] Real-device test: install, add data, kill and reopen, airplane mode, export/import, update over the previous version keeps data.
+- Done when: a signed APK installs, works offline (except map tiles), locks correctly, keeps data across updates, and round-trips export/import.
+
+## Phase 11: Sync with your own server (optional)
+Standalone phone stays fully usable without a server; sync turns on by pairing. The web app stays server-backed.
+- [ ] Decision before coding: hand-rolled sync (below) vs a sync engine (PowerSync or Electric). Default: hand-rolled, because there is one owner, a few devices, and no extra service in `docker compose`. Record the decision in `docs/TRD.md`.
+- [ ] Server migration: `deleted_at` on accounts, transactions, transaction_items, transfers; `server_seq` stamped by a trigger from one Postgres sequence; stable `slug` on categories (backfilled from kind + name); `devices` table (id, name, token_hash, created_at, last_seen_at, revoked_at). Update `docs/BACKGROUND_SCHEMA.md`.
+- [ ] Soft delete on the server: every balance, list, and report query ignores deleted rows. One test per query.
+- [ ] Pairing: `POST /api/sync/pair` (owner password -> per-device token, rate limited, token stored hashed); device list and revoke in the web app; a revoked token gets 401.
+- [ ] `POST /api/sync/push` (batched, one DB transaction, idempotent upsert by id, FK-safe order, same validation as the normal routes) and `GET /api/sync/pull?since=<seq>` (changes after a cursor, paged).
+- [ ] Conflict rules: per row, the last write to reach the server wins (phone clocks are not trusted); a delete never removes an account that still has live rows (the account is kept and the device is told); transaction items travel inside their transaction.
+- [ ] Mobile client: `dirty` flags and a `sync_state` table (cursor, device id); sync on app open, after local writes (debounced), and with a "Sync now" button; show last sync time and errors; token in secure storage; HTTPS only, no cleartext.
+- [ ] First pairing when both sides already have data: choose upload this phone, replace this phone with the server's data, or cancel. Categories are matched by `slug` and the phone remaps its local category ids. Tests for each path, and no duplicate categories.
+- [ ] Tests (real Postgres, two simulated devices): add on A shows on B; edit/edit conflict; delete propagates; offline edits push later; repeated push is harmless; balances identical on both after sync; revoked device is blocked; invalid data is rejected like normal routes.
+- [ ] Docs: PRD and TRD (sync protocol, security, standalone vs synced); README (pairing, and how the phone reaches the server over HTTPS or a VPN).
+- Done when: web and phone (or two phones) show identical balances after sync, offline edits merge without data loss in the tested cases, and a lost phone can be revoked.
+
 ## Deferred on purpose
-Budgets, goals, bank sync, receipt scanning, multi-currency, shared wallets, caching balances, prebuilt images on a registry, built-in TLS, multi-instance scaling, offline write queue and background sync, custom in-app install banner.
+Budgets, goals, bank sync, receipt scanning, multi-currency, shared wallets, caching balances, prebuilt images on a registry, built-in TLS, multi-instance scaling, offline write queue and background sync, custom in-app install banner, iOS native app (PWA covers iOS), background sync on the phone, conflict-resolution screen, QR pairing.

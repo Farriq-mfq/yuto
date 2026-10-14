@@ -7,7 +7,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { formatRupiah } from "../lib/format";
-import type { ReportCategory, TxKind } from "../lib/queries";
+import type { ReportCategory, TxKind } from "../lib/datasource";
 import { strings } from "../strings";
 
 /**

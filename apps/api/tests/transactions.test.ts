@@ -35,11 +35,6 @@ const { createApp } = await import("../src/app");
 import type { App } from "../src/app";
 import { db } from "../src/db/client";
 import { accounts, categories, transactions } from "../src/db/schema";
-import {
-  TransactionInputError,
-  jakartaDayRange,
-  jakartaMonthRange,
-} from "../src/modules/transactions/service";
 
 const KNOWN_ID = "22222222-2222-4222-8222-222222222222";
 
@@ -150,50 +145,6 @@ describe("transactions auth guard", () => {
       });
     });
   }
-});
-
-describe("jakarta time helpers", () => {
-  test("month range converts WIB boundaries to UTC", () => {
-    const { start, end } = jakartaMonthRange("2026-01");
-    expect(start.toISOString()).toBe("2025-12-31T17:00:00.000Z");
-    expect(end.toISOString()).toBe("2026-01-31T17:00:00.000Z");
-  });
-
-  test("december month rolls over to january", () => {
-    const { start, end } = jakartaMonthRange("2026-12");
-    expect(start.toISOString()).toBe("2026-11-30T17:00:00.000Z");
-    expect(end.toISOString()).toBe("2026-12-31T17:00:00.000Z");
-  });
-
-  test("day range is 24 hours from WIB midnight", () => {
-    const { start, end } = jakartaDayRange("2026-02-01");
-    expect(start.toISOString()).toBe("2026-01-31T17:00:00.000Z");
-    expect(end.toISOString()).toBe("2026-02-01T17:00:00.000Z");
-  });
-
-  test("bad month formats throw invalid-month", () => {
-    for (const bad of ["2026-13", "2026-1", "januari", "2026/01", ""]) {
-      try {
-        jakartaMonthRange(bad);
-        throw new Error(`expected ${bad} to throw`);
-      } catch (err) {
-        expect(err).toBeInstanceOf(TransactionInputError);
-        expect((err as TransactionInputError).failure).toBe("invalid-month");
-      }
-    }
-  });
-
-  test("impossible dates throw invalid-date", () => {
-    for (const bad of ["2026-02-30", "2026-13-01", "bukan-tanggal", ""]) {
-      try {
-        jakartaDayRange(bad);
-        throw new Error(`expected ${bad} to throw`);
-      } catch (err) {
-        expect(err).toBeInstanceOf(TransactionInputError);
-        expect((err as TransactionInputError).failure).toBe("invalid-date");
-      }
-    }
-  });
 });
 
 describe("transactions", () => {

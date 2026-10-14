@@ -9,20 +9,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { isUnauthorized } from "../lib/api";
+import { isUnauthorized } from "../lib/datasource";
+import { useDataSource } from "../lib/datasourceContext";
 import {
   currentMonthJakarta,
   formatPercent,
   formatRupiah,
   formatTimeJakarta,
 } from "../lib/format";
-import {
-  fetchMonthTransactions,
-  fetchReportCategories,
-  fetchReportSummary,
-  type ReportCategory,
-  type TxKind,
-} from "../lib/queries";
+import { type ReportCategory, type TxKind } from "../lib/datasource";
 import { strings } from "../strings";
 
 /** Teks perubahan vs bulan lalu: selalu bertanda +/- plus kata naik/turun. */
@@ -42,6 +37,7 @@ function changeLabel(category: ReportCategory): string {
  * untuk melihat daftar transaksi kategori itu bulan itu, inline.
  */
 export default function Reports() {
+  const dataSource = useDataSource();
   // why: banner Home menautkan bulan yang sedang dilihat (?month=);
   // nilai tak valid diabaikan demi bulan berjalan.
   const [searchParams] = useSearchParams();
@@ -62,19 +58,19 @@ export default function Reports() {
 
   const summary = useQuery({
     queryKey: ["reports", "summary", month],
-    queryFn: () => fetchReportSummary(month),
+    queryFn: () => dataSource.getReportSummary(month),
     retry: false,
   });
   const categories = useQuery({
     queryKey: ["reports", "categories", month, kind],
-    queryFn: () => fetchReportCategories(month, kind),
+    queryFn: () => dataSource.getReportCategories(month, kind),
     retry: false,
   });
   // why: daftar transaksi kategori diambil dari endpoint yang sama seperti
   // Home lalu difilter client, tanpa route baru.
   const detail = useQuery({
     queryKey: ["transactions", month, kind],
-    queryFn: () => fetchMonthTransactions(month, kind),
+    queryFn: () => dataSource.getMonthTransactions(month, kind),
     enabled: expandedId !== null,
     retry: false,
   });

@@ -16,14 +16,11 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { api, errorStatus, isUnauthorized } from "../lib/api";
+import { errorStatus, isUnauthorized } from "../lib/datasource";
+import { useDataSource } from "../lib/datasourceContext";
 import { formatRupiah } from "../lib/format";
 import { useHideBalance } from "../lib/hideBalance";
-import {
-  fetchAccount,
-  fetchAccountsSummary,
-  type AccountType,
-} from "../lib/queries";
+import { type AccountType } from "../lib/datasource";
 import { strings } from "../strings";
 
 function asAccountType(type: string): AccountType {
@@ -33,6 +30,7 @@ function asAccountType(type: string): AccountType {
 export default function AccountEdit() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
+  const dataSource = useDataSource();
   const queryClient = useQueryClient();
   const [hidden] = useHideBalance();
   const [pending, setPending] = useState(false);
@@ -43,13 +41,13 @@ export default function AccountEdit() {
 
   const account = useQuery({
     queryKey: ["accounts", id],
-    queryFn: () => fetchAccount(id),
+    queryFn: () => dataSource.getAccount(id),
     retry: false,
   });
   // Saldo kini terhitung untuk info saja (preferensi sembunyi ikut Wallet).
   const summary = useQuery({
     queryKey: ["accounts", "summary"],
-    queryFn: fetchAccountsSummary,
+    queryFn: () => dataSource.getAccountsSummary(),
     retry: false,
   });
 
@@ -85,16 +83,17 @@ export default function AccountEdit() {
     if (pending || !account.data) return;
     setPending(true);
     setServerError(null);
-    const { error } = await api.api.accounts({ id }).patch({
-      name: values.name,
-      institution: values.institution,
-      type: values.type,
-      category: values.category,
-      initialBalance: values.initialBalance,
-      showCategory: values.showCategory,
-    });
-    setPending(false);
-    if (error) {
+    try {
+      await dataSource.updateAccount(id, {
+        name: values.name,
+        institution: values.institution,
+        type: values.type,
+        category: values.category,
+        initialBalance: values.initialBalance,
+        showCategory: values.showCategory,
+      });
+    } catch (error) {
+      setPending(false);
       if (isUnauthorized(error)) {
         navigate("/login", { replace: true });
         return;
@@ -102,6 +101,7 @@ export default function AccountEdit() {
       setServerError(strings.saveFailed);
       return;
     }
+    setPending(false);
     await queryClient.invalidateQueries({ queryKey: ["accounts"] });
     navigate("/wallet", { replace: true });
   }
@@ -110,9 +110,10 @@ export default function AccountEdit() {
     if (deleting) return;
     setDeleting(true);
     setDeleteError(null);
-    const { error } = await api.api.accounts({ id }).delete();
-    setDeleting(false);
-    if (error) {
+    try {
+      await dataSource.deleteAccount(id);
+    } catch (error) {
+      setDeleting(false);
       if (isUnauthorized(error)) {
         navigate("/login", { replace: true });
         return;
@@ -126,6 +127,7 @@ export default function AccountEdit() {
       setDeleteError(strings.deleteFailed);
       return;
     }
+    setDeleting(false);
     await queryClient.invalidateQueries({ queryKey: ["accounts"] });
     navigate("/wallet", { replace: true });
   }

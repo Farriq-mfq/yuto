@@ -7,11 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SkipLink } from "../components/SkipLink";
-import { api, errorStatus } from "../lib/api";
+import { errorStatus } from "../lib/datasource";
+import { useDataSource } from "../lib/datasourceContext";
 import { strings } from "../strings";
 
 export default function Login() {
   const navigate = useNavigate();
+  const dataSource = useDataSource();
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -21,16 +23,18 @@ export default function Login() {
     if (pending || password.length === 0) return;
     setPending(true);
     setMessage(null);
-    const { error } = await api.api.auth.login.post({ password });
-    setPending(false);
-    if (!error) {
-      navigate("/", { replace: true });
+    try {
+      await dataSource.login(password);
+    } catch (error) {
+      setPending(false);
+      const status = errorStatus(error);
+      if (status === 401) setMessage(strings.loginWrongPassword);
+      else if (status === 429) setMessage(strings.loginTooMany);
+      else setMessage(strings.loginFailed);
       return;
     }
-    const status = errorStatus(error);
-    if (status === 401) setMessage(strings.loginWrongPassword);
-    else if (status === 429) setMessage(strings.loginTooMany);
-    else setMessage(strings.loginFailed);
+    setPending(false);
+    navigate("/", { replace: true });
   }
 
   return (

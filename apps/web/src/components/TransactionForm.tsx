@@ -39,7 +39,8 @@ import {
   splitLocalDateTime,
 } from "../lib/format";
 import { previewBalance } from "../lib/preview";
-import { fetchAppConfig, type TxKind } from "../lib/queries";
+import type { TxKind } from "../lib/datasource";
+import { useDataSource } from "../lib/datasourceContext";
 import { formatCoords } from "../lib/location";
 import { strings } from "../strings";
 
@@ -169,6 +170,7 @@ export function TransactionForm({
   onSubmit,
   onCancel,
 }: TransactionFormProps) {
+  const dataSource = useDataSource();
   const [kind, setKind] = useState<TxKind>(initial.kind);
   const [accountId, setAccountId] = useState(initial.accountId);
   const [categoryId, setCategoryId] = useState(initial.categoryId);
@@ -209,7 +211,7 @@ export function TransactionForm({
   // Gagal/error dianggap mati: seksi lokasi tidak tampil sama sekali.
   const config = useQuery({
     queryKey: ["config"],
-    queryFn: fetchAppConfig,
+    queryFn: () => dataSource.getAppConfig(),
     staleTime: Infinity,
     retry: false,
   });

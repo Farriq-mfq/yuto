@@ -8,36 +8,33 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { api, errorStatus, isUnauthorized } from "../lib/api";
+import { errorStatus, isUnauthorized } from "../lib/datasource";
+import { useDataSource } from "../lib/datasourceContext";
 import { toDateTimeLocalJakarta } from "../lib/format";
 import { balanceBeforeTx } from "../lib/preview";
-import {
-  fetchAccountsSummary,
-  fetchCategories,
-  fetchTransaction,
-} from "../lib/queries";
 import { strings } from "../strings";
 
 export default function TransactionEdit() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
+  const dataSource = useDataSource();
   const queryClient = useQueryClient();
   const [pending, setPending] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   const tx = useQuery({
     queryKey: ["transactions", id],
-    queryFn: () => fetchTransaction(id),
+    queryFn: () => dataSource.getTransaction(id),
     retry: false,
   });
   const summary = useQuery({
     queryKey: ["accounts", "summary"],
-    queryFn: fetchAccountsSummary,
+    queryFn: () => dataSource.getAccountsSummary(),
     retry: false,
   });
   const categories = useQuery({
     queryKey: ["categories"],
-    queryFn: fetchCategories,
+    queryFn: () => dataSource.getCategories(),
     retry: false,
   });
 
@@ -75,39 +72,40 @@ export default function TransactionEdit() {
     setPending(true);
     setServerError(null);
     const original = tx.data;
-    const { error } = await api.api.transactions({ id }).patch({
-      kind: values.kind,
-      accountId: values.accountId,
-      // Jangan kirim categoryId bila user tidak menyentuhnya agar kategori
-      // tak berubah diam-diam (PRD acceptance 6).
-      ...(values.categoryId !== original.categoryId
-        ? { categoryId: values.categoryId }
-        : {}),
-      title: values.title,
-      amount: values.amount,
-      ...(new Date(values.occurredAtIso).getTime() !==
-      new Date(original.occurredAt).getTime()
-        ? { occurredAt: values.occurredAtIso }
-        : {}),
-      ...((values.note || "") !== (original.note ?? "")
-        ? { note: values.note }
-        : {}),
-      // Lokasi: kirim hanya field yang berubah (tanpa address terpisah).
-      // Toggle mati = nilai form null = lokasi server dibiarkan apa adanya.
-      ...((values.latitude ?? null) !== (original.latitude ?? null) ||
-      (values.longitude ?? null) !== (original.longitude ?? null)
-        ? values.latitude !== null && values.longitude !== null
-          ? { latitude: values.latitude, longitude: values.longitude }
-          : {}
-        : {}),
-      ...((values.locationName || "") !== (original.locationName ?? "")
-        ? { locationName: values.locationName }
-        : {}),
-      // Server replace semantics: selalu kirim daftar final (kosong = hapus).
-      items: values.items,
-    });
-    setPending(false);
-    if (error) {
+    try {
+      await dataSource.updateTransaction(id, {
+        kind: values.kind,
+        accountId: values.accountId,
+        // Jangan kirim categoryId bila user tidak menyentuhnya agar kategori
+        // tak berubah diam-diam (PRD acceptance 6).
+        ...(values.categoryId !== original.categoryId
+          ? { categoryId: values.categoryId }
+          : {}),
+        title: values.title,
+        amount: values.amount,
+        ...(new Date(values.occurredAtIso).getTime() !==
+        new Date(original.occurredAt).getTime()
+          ? { occurredAt: values.occurredAtIso }
+          : {}),
+        ...((values.note || "") !== (original.note ?? "")
+          ? { note: values.note }
+          : {}),
+        // Lokasi: kirim hanya field yang berubah (tanpa address terpisah).
+        // Toggle mati = nilai form null = lokasi server dibiarkan apa adanya.
+        ...((values.latitude ?? null) !== (original.latitude ?? null) ||
+        (values.longitude ?? null) !== (original.longitude ?? null)
+          ? values.latitude !== null && values.longitude !== null
+            ? { latitude: values.latitude, longitude: values.longitude }
+            : {}
+          : {}),
+        ...((values.locationName || "") !== (original.locationName ?? "")
+          ? { locationName: values.locationName }
+          : {}),
+        // Server replace semantics: selalu kirim daftar final (kosong = hapus).
+        items: values.items,
+      });
+    } catch (error) {
+      setPending(false);
       if (isUnauthorized(error)) {
         navigate("/login", { replace: true });
         return;
@@ -115,6 +113,7 @@ export default function TransactionEdit() {
       setServerError(strings.saveFailed);
       return;
     }
+    setPending(false);
     await queryClient.invalidateQueries({ queryKey: ["transactions"] });
     await queryClient.invalidateQueries({ queryKey: ["accounts"] });
     navigate(`/transactions/${id}`, { replace: true });

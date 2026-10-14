@@ -4,27 +4,11 @@ import {
   currentMonthJakarta,
   dayKeyJakarta,
   formatLocalDateId,
-  formatPercent,
-  formatRupiah,
   formatTimeJakarta,
   localDateFromDatePart,
   splitLocalDateTime,
   toDateTimeLocalJakarta,
 } from "./format";
-
-describe("formatRupiah", () => {
-  test("formats whole rupiah in id-ID style", () => {
-    expect(formatRupiah(250000)).toBe("Rp 250.000");
-  });
-
-  test("formats zero", () => {
-    expect(formatRupiah(0)).toBe("Rp 0");
-  });
-
-  test("rounds fractional input to whole rupiah", () => {
-    expect(formatRupiah(1500.6)).toBe("Rp 1.501");
-  });
-});
 
 describe("currentMonthJakarta", () => {
   test("returns YYYY-MM in Asia/Jakarta", () => {
@@ -104,13 +88,5 @@ describe("combineLocalDateTime", () => {
     const picked = localDateFromDatePart(date);
     expect(picked).toBeDefined();
     expect(combineLocalDateTime(picked as Date, time)).toBe(original);
-  });
-});
-
-describe("formatPercent", () => {
-  test("formats Indonesian percent with one decimal", () => {
-    expect(formatPercent(33.333)).toBe("33,3%");
-    expect(formatPercent(0)).toBe("0,0%");
-    expect(formatPercent(100)).toBe("100,0%");
   });
 });

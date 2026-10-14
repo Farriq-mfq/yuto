@@ -16,19 +16,16 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { api, errorStatus, isUnauthorized } from "../lib/api";
+import { errorStatus, isUnauthorized } from "../lib/datasource";
+import { useDataSource } from "../lib/datasourceContext";
 import { formatDateTimeJakarta, formatRupiah } from "../lib/format";
 import { formatCoords, osmUrl } from "../lib/location";
-import {
-  fetchAccountsSummary,
-  fetchCategories,
-  fetchTransaction,
-} from "../lib/queries";
 import { strings } from "../strings";
 
 export default function TransactionDetail() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
+  const dataSource = useDataSource();
   const queryClient = useQueryClient();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -36,18 +33,18 @@ export default function TransactionDetail() {
 
   const tx = useQuery({
     queryKey: ["transactions", id],
-    queryFn: () => fetchTransaction(id),
+    queryFn: () => dataSource.getTransaction(id),
     retry: false,
   });
   // 2 query paralel untuk resolve nama akun & kategori.
   const summary = useQuery({
     queryKey: ["accounts", "summary"],
-    queryFn: fetchAccountsSummary,
+    queryFn: () => dataSource.getAccountsSummary(),
     retry: false,
   });
   const categories = useQuery({
     queryKey: ["categories"],
-    queryFn: fetchCategories,
+    queryFn: () => dataSource.getCategories(),
     retry: false,
   });
 
@@ -63,9 +60,10 @@ export default function TransactionDetail() {
     if (deleting) return;
     setDeleting(true);
     setDeleteError(false);
-    const { error } = await api.api.transactions({ id }).delete();
-    setDeleting(false);
-    if (error) {
+    try {
+      await dataSource.deleteTransaction(id);
+    } catch (error) {
+      setDeleting(false);
       if (isUnauthorized(error)) {
         navigate("/login", { replace: true });
         return;
@@ -74,6 +72,7 @@ export default function TransactionDetail() {
       setDeleteError(true);
       return;
     }
+    setDeleting(false);
     await queryClient.invalidateQueries({ queryKey: ["transactions"] });
     await queryClient.invalidateQueries({ queryKey: ["accounts"] });
     navigate("/", { replace: true });

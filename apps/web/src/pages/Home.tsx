@@ -26,7 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { isUnauthorized } from "../lib/api";
+import { isUnauthorized } from "../lib/datasource";
 import { previousMonth, weekDelta } from "../lib/balanceStats";
 import {
   currentMonthJakarta,
@@ -35,12 +35,8 @@ import {
   formatRupiah,
   formatTimeJakarta,
 } from "../lib/format";
-import {
-  fetchAccountsSummary,
-  fetchMonthTransactions,
-  type MonthTransaction,
-  type TxKind,
-} from "../lib/queries";
+import { type MonthTransaction, type TxKind } from "../lib/datasource";
+import { useDataSource } from "../lib/datasourceContext";
 import { useTheme, type ThemePreference } from "../lib/theme";
 import { strings } from "../strings";
 
@@ -88,6 +84,7 @@ function groupByDay(rows: MonthTransaction[]): DayGroup[] {
 }
 
 export default function Home() {
+  const dataSource = useDataSource();
   const [month, setMonth] = useState(() => currentMonthJakarta());
   const [filter, setFilter] = useState<Filter>("all");
   // Potret "sekarang" sekali per mount agar jendela 7 hari stabil.
@@ -104,13 +101,16 @@ export default function Home() {
   // bulan ini (tanpa endpoint reports).
   const summary = useQuery({
     queryKey: ["transactions", month],
-    queryFn: () => fetchMonthTransactions(month),
+    queryFn: () => dataSource.getMonthTransactions(month),
     retry: false,
   });
   const filtered = useQuery({
     queryKey: ["transactions", month, filter],
     queryFn: () =>
-      fetchMonthTransactions(month, filter === "all" ? undefined : filter),
+      dataSource.getMonthTransactions(
+        month,
+        filter === "all" ? undefined : filter,
+      ),
     enabled: filter !== "all",
     retry: false,
   });
@@ -118,7 +118,7 @@ export default function Home() {
   // Key ["accounts", "summary"] dipakai ulang agar cache dipakai bersama Wallet.
   const accounts = useQuery({
     queryKey: ["accounts", "summary"],
-    queryFn: fetchAccountsSummary,
+    queryFn: () => dataSource.getAccountsSummary(),
     retry: false,
   });
   // shortcut: agregat client, pindah ke endpoint server bila lambat —
@@ -127,13 +127,13 @@ export default function Home() {
   // bulan berjalan, datanya dipakai ulang dari `summary` (key cache sama).
   const currentTx = useQuery({
     queryKey: ["transactions", currentMonth],
-    queryFn: () => fetchMonthTransactions(currentMonth),
+    queryFn: () => dataSource.getMonthTransactions(currentMonth),
     enabled: month !== currentMonth,
     retry: false,
   });
   const lastTx = useQuery({
     queryKey: ["transactions", lastMonth],
-    queryFn: () => fetchMonthTransactions(lastMonth),
+    queryFn: () => dataSource.getMonthTransactions(lastMonth),
     retry: false,
   });
 

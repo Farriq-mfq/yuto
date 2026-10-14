@@ -1,7 +1,7 @@
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { formatRupiah } from "../lib/format";
-import type { TxKind } from "../lib/queries";
+import type { TxKind } from "../lib/datasource";
 import { strings } from "../strings";
 
 /**

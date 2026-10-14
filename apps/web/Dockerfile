@@ -8,9 +8,11 @@ WORKDIR /app
 COPY package.json bun.lock ./
 COPY apps/web/package.json ./apps/web/package.json
 COPY apps/api/package.json ./apps/api/package.json
+COPY packages/core/package.json ./packages/core/package.json
 RUN bun install --frozen-lockfile
 
 COPY tsconfig.base.json ./
+COPY packages/core ./packages/core
 COPY apps/web/tsconfig.json ./apps/web/tsconfig.json
 COPY apps/web ./apps/web
 RUN bun run --cwd apps/web build
@@ -28,11 +30,15 @@ WORKDIR /app
 COPY package.json bun.lock ./
 COPY apps/web/package.json ./apps/web/package.json
 COPY apps/api/package.json ./apps/api/package.json
+COPY packages/core/package.json ./packages/core/package.json
 RUN bun install --frozen-lockfile
 
 # The dev mount (./apps/web on /app) shadows everything below /app, so the
 # base tsconfig the dev source extends must live outside the mount.
 COPY tsconfig.base.json /tsconfig.base.json
+# Shadowed by the ./packages/core mount below, but keeps the image coherent
+# when run without the dev override.
+COPY packages/core ./packages/core
 
 ENV PORT=5173
 EXPOSE 5173

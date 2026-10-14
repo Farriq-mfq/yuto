@@ -2,9 +2,11 @@ import { and, desc, eq, gte, inArray, lt, type SQL } from "drizzle-orm";
 import { db } from "../../db/client";
 import {
   JakartaTimeError,
+  itemsSumMatches,
   jakartaDayRange as jakartaDayRangeRaw,
   jakartaMonthRange as jakartaMonthRangeRaw,
-} from "../../lib/jakarta-time";
+  kindMatchesCategory,
+} from "@yuto/core";
 import {
   accounts,
   categories,
@@ -72,7 +74,7 @@ export class TransactionInputError extends Error {
   }
 }
 
-// Shared Jakarta helpers live in lib/jakarta-time.ts so every module uses
+// Shared Jakarta helpers live in @yuto/core so every module uses
 // the same UTC+7 conversion. These wrappers translate its error into
 // TransactionInputError to keep this module's failure contract.
 export function jakartaMonthRange(month: string): {
@@ -98,10 +100,6 @@ export function jakartaDayRange(date: string): { start: Date; end: Date } {
     }
     throw err;
   }
-}
-
-export function itemsTotal(items: TransactionItemInput[]): number {
-  return items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
 }
 
 export async function listTransactions(
@@ -197,17 +195,13 @@ export async function createTransaction(
       "Kategori tidak ditemukan.",
     );
   }
-  if (input.kind !== category.kind) {
+  if (!kindMatchesCategory(input.kind, category.kind)) {
     throw new TransactionInputError(
       "kind-mismatch",
       "Jenis transaksi harus sama dengan jenis kategori.",
     );
   }
-  if (
-    input.items !== undefined &&
-    input.items.length > 0 &&
-    itemsTotal(input.items) !== input.amount
-  ) {
+  if (!itemsSumMatches(input.items, input.amount)) {
     throw new TransactionInputError(
       "item-sum-mismatch",
       "Jumlah harga item harus sama dengan nominal transaksi.",
@@ -287,7 +281,7 @@ export async function updateTransaction(
       "Kategori tidak ditemukan.",
     );
   }
-  if (kind !== category.kind) {
+  if (!kindMatchesCategory(kind, category.kind)) {
     throw new TransactionInputError(
       "kind-mismatch",
       "Jenis transaksi harus sama dengan jenis kategori.",
@@ -297,8 +291,7 @@ export async function updateTransaction(
   // An empty array means "no breakdown" and skips the sum check.
   if (
     patch.items !== undefined &&
-    patch.items.length > 0 &&
-    itemsTotal(patch.items) !== amount
+    !itemsSumMatches(patch.items, amount)
   ) {
     throw new TransactionInputError(
       "item-sum-mismatch",
@@ -311,8 +304,7 @@ export async function updateTransaction(
   if (
     patch.amount !== undefined &&
     patch.items === undefined &&
-    existing.items.length > 0 &&
-    itemsTotal(existing.items) !== patch.amount
+    !itemsSumMatches(existing.items, patch.amount)
   ) {
     throw new TransactionInputError(
       "item-sum-mismatch",

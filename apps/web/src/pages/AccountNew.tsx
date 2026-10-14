@@ -5,11 +5,13 @@ import {
   AccountForm,
   type AccountFormValues,
 } from "@/components/AccountForm";
-import { api, isUnauthorized } from "../lib/api";
+import { isUnauthorized } from "../lib/datasource";
+import { useDataSource } from "../lib/datasourceContext";
 import { strings } from "../strings";
 
 export default function AccountNew() {
   const navigate = useNavigate();
+  const dataSource = useDataSource();
   const queryClient = useQueryClient();
   const [pending, setPending] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -18,16 +20,17 @@ export default function AccountNew() {
     if (pending) return;
     setPending(true);
     setServerError(null);
-    const { error } = await api.api.accounts.post({
-      name: values.name,
-      institution: values.institution,
-      type: values.type,
-      category: values.category,
-      initialBalance: values.initialBalance,
-      showCategory: values.showCategory,
-    });
-    setPending(false);
-    if (error) {
+    try {
+      await dataSource.createAccount({
+        name: values.name,
+        institution: values.institution,
+        type: values.type,
+        category: values.category,
+        initialBalance: values.initialBalance,
+        showCategory: values.showCategory,
+      });
+    } catch (error) {
+      setPending(false);
       if (isUnauthorized(error)) {
         navigate("/login", { replace: true });
         return;
@@ -35,6 +38,7 @@ export default function AccountNew() {
       setServerError(strings.saveFailed);
       return;
     }
+    setPending(false);
     await queryClient.invalidateQueries({ queryKey: ["accounts"] });
     navigate("/wallet", { replace: true });
   }
