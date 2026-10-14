@@ -33,6 +33,7 @@ services:
     volumes:
       - ./apps/web:/app
       - ./packages/core:/app/packages/core # nested mount: @yuto/core source for vite
+      - ./packages/local:/app/packages/local # nested mount: @yuto/local source for vite
       - /app/node_modules # anonymous volume: keep image-installed deps
     # NOTE: the base file also publishes 8080:80 and compose unions ports, so
     # that mapping still shows in `config` output. Nothing listens on :80 in dev.
