@@ -200,7 +200,7 @@ describe("accounts", () => {
     const tag = randomUUID().slice(0, 8);
     const [row] = await db
       .insert(categories)
-      .values({ name: `Kategori ${tag}`, kind, icon: "box", color: "#000000" })
+      .values({ slug: `test-${tag}`, name: `Kategori ${tag}`, kind, icon: "box", color: "#000000" })
       .returning({ id: categories.id });
     if (!row) throw new Error("Gagal membuat kategori test.");
     categoryIds.push(row.id);
@@ -397,7 +397,8 @@ describe("accounts", () => {
       authed(`/api/accounts/${account.id}`, cookie, { method: "DELETE" }),
     );
     expect(res.status).toBe(200);
-    accountIds.splice(accountIds.indexOf(account.id), 1);
+    // Soft delete: the tombstoned row stays tracked so afterEach can
+    // hard-delete it; the GET below already proves it is hidden.
 
     const gone = await app.handle(
       authed(`/api/accounts/${account.id}`, cookie),

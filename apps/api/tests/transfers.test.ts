@@ -319,7 +319,8 @@ describe("transfers", () => {
       authed(`/api/transfers/${transfer.id}`, cookie, { method: "DELETE" }),
     );
     expect(deleted.status).toBe(200);
-    transferIds.splice(transferIds.indexOf(transfer.id), 1);
+    // Soft delete: keep the id tracked so afterEach hard-deletes the
+    // tombstone; the balance assertions below prove it is excluded.
 
     const restored = await balances(app, cookie);
     expect(restored.get(fromId)).toBe(100000);

@@ -191,7 +191,7 @@ describe("reports", () => {
     const color = overrides?.color ?? "#000000";
     const [row] = await db
       .insert(categories)
-      .values({ name: `Kategori ${tag}`, kind, icon, color })
+      .values({ slug: `test-${tag}`, name: `Kategori ${tag}`, kind, icon, color })
       .returning({
         id: categories.id,
         name: categories.name,

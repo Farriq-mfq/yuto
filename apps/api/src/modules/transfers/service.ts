@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lt, or, type SQL } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, lt, or, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db/client";
 import { accounts, transfers } from "../../db/schema";
 import { JakartaTimeError, jakartaMonthRange } from "@yuto/core";
@@ -68,6 +68,8 @@ export async function listTransfers(
       ) as SQL,
     );
   }
+  // Sync: tombstones stay in the table for pull; UI reads see live rows only.
+  conditions.push(isNull(transfers.deletedAt));
   const limit =
     filter.limit === undefined
       ? DEFAULT_LIMIT
@@ -76,7 +78,7 @@ export async function listTransfers(
   return db
     .select()
     .from(transfers)
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .where(and(...conditions))
     .orderBy(desc(transfers.occurredAt), desc(transfers.id))
     .limit(limit);
 }
@@ -85,7 +87,7 @@ export async function getTransferById(id: string): Promise<Transfer | null> {
   const [row] = await db
     .select()
     .from(transfers)
-    .where(eq(transfers.id, id));
+    .where(and(eq(transfers.id, id), isNull(transfers.deletedAt)));
   return row ?? null;
 }
 
@@ -105,7 +107,8 @@ export async function createTransfer(
     const [from] = await tx
       .select({ id: accounts.id })
       .from(accounts)
-      .where(eq(accounts.id, input.fromAccountId))
+      // A tombstoned account is gone for new writes, same as a missing one.
+      .where(and(eq(accounts.id, input.fromAccountId), isNull(accounts.deletedAt)))
       .limit(1);
     if (!from) {
       throw new TransferInputError(
@@ -116,7 +119,7 @@ export async function createTransfer(
     const [to] = await tx
       .select({ id: accounts.id })
       .from(accounts)
-      .where(eq(accounts.id, input.toAccountId))
+      .where(and(eq(accounts.id, input.toAccountId), isNull(accounts.deletedAt)))
       .limit(1);
     if (!to) {
       throw new TransferInputError(
@@ -143,10 +146,15 @@ export async function deleteTransfer(id: string): Promise<boolean> {
   const [row] = await db
     .select({ id: transfers.id })
     .from(transfers)
-    .where(eq(transfers.id, id))
+    .where(and(eq(transfers.id, id), isNull(transfers.deletedAt)))
     .limit(1);
   if (!row) return false;
+  // Phase 11: soft delete. The explicit nextval bumps server_seq so the
+  // tombstone moves the pull cursor (plain UPDATEs never touch it).
   // Deleting restores both balances through the computed balance formula.
-  await db.delete(transfers).where(eq(transfers.id, id));
+  await db
+    .update(transfers)
+    .set({ deletedAt: new Date(), serverSeq: sql`nextval('sync_seq')` })
+    .where(eq(transfers.id, id));
   return true;
 }

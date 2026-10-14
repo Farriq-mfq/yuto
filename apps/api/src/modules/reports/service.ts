@@ -1,4 +1,4 @@
-import { and, eq, gte, lt, sql } from "drizzle-orm";
+import { and, eq, gte, isNull, lt, sql } from "drizzle-orm";
 import { db } from "../../db/client";
 import { categories, transactions } from "../../db/schema";
 import {
@@ -74,7 +74,12 @@ export async function getMonthlySummary(month: string): Promise<MonthlySummary> 
     })
     .from(transactions)
     .where(
-      and(gte(transactions.occurredAt, start), lt(transactions.occurredAt, end)),
+      and(
+        // Sync: tombstoned rows are not spending.
+        isNull(transactions.deletedAt),
+        gte(transactions.occurredAt, start),
+        lt(transactions.occurredAt, end),
+      ),
     )
     .groupBy(transactions.kind);
   let income = 0;
@@ -96,6 +101,8 @@ export async function getCategoryBreakdown(
   );
 
   const kindFilter = eq(transactions.kind, kind);
+  // Sync: tombstoned rows are excluded from both months.
+  const aliveFilter = isNull(transactions.deletedAt);
   const current = await db
     .select({
       categoryId: transactions.categoryId,
@@ -109,6 +116,7 @@ export async function getCategoryBreakdown(
     .where(
       and(
         kindFilter,
+        aliveFilter,
         gte(transactions.occurredAt, start),
         lt(transactions.occurredAt, end),
       ),
@@ -129,6 +137,7 @@ export async function getCategoryBreakdown(
     .where(
       and(
         kindFilter,
+        aliveFilter,
         gte(transactions.occurredAt, prevStart),
         lt(transactions.occurredAt, prevEnd),
       ),

@@ -9,6 +9,157 @@ import type {
   UpdateTransactionInput,
 } from "./datasource";
 
+// why: kolom sync (deletedAt/serverSeq/slug/...) milik protokol sinkronisasi,
+// bukan kontrak UI. Setiap read me-whitelist-pick field kontrak UI saja,
+// sehingga kolom sync — sekarang maupun yang ditambahkan migrasi nanti — tak
+// bocor ke tipe turunan Eden dan LocalDataSource tetap memenuhi DataSource
+// tanpa diubah (pairing sync Phase 11 nanti tambah method sendiri).
+
+/** Item transaksi: kontrak UI (tanpa deletedAt/serverSeq). */
+function stripTransactionItemSync(item: {
+  id: string;
+  transactionId: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+}) {
+  return {
+    id: item.id,
+    transactionId: item.transactionId,
+    name: item.name,
+    quantity: item.quantity,
+    unitPrice: item.unitPrice,
+  };
+}
+
+/**
+ * Transaksi: kontrak UI. createdAt/updatedAt dibuang — tak ada layar yang
+ * baca (grep pemakaian), UI hanya pakai occurredAt.
+ */
+function stripTransactionSync(row: {
+  id: string;
+  accountId: string;
+  categoryId: string;
+  kind: "expense" | "income";
+  title: string;
+  amount: number;
+  occurredAt: Date;
+  note: string | null;
+  locationName: string | null;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  items: {
+    id: string;
+    transactionId: string;
+    name: string;
+    quantity: number;
+    unitPrice: number;
+  }[];
+}) {
+  return {
+    id: row.id,
+    accountId: row.accountId,
+    categoryId: row.categoryId,
+    kind: row.kind,
+    title: row.title,
+    amount: row.amount,
+    occurredAt: row.occurredAt,
+    note: row.note,
+    locationName: row.locationName,
+    address: row.address,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    items: row.items.map(stripTransactionItemSync),
+  };
+}
+
+/** Akun ringkasan: kontrak UI + saldo terhitung (tanpa deletedAt/serverSeq). */
+function stripAccountSummarySync(row: {
+  id: string;
+  name: string;
+  institution: string;
+  type: "bank" | "ewallet" | "cash";
+  category: string;
+  initialBalance: number;
+  showCategory: boolean;
+  createdAt: Date;
+  balance: number;
+}) {
+  return {
+    id: row.id,
+    name: row.name,
+    institution: row.institution,
+    type: row.type,
+    category: row.category,
+    initialBalance: row.initialBalance,
+    showCategory: row.showCategory,
+    createdAt: row.createdAt,
+    balance: row.balance,
+  };
+}
+
+/** Akun detail: kontrak UI untuk prefill form (tanpa deletedAt/serverSeq). */
+function stripAccountSync(row: {
+  id: string;
+  name: string;
+  institution: string;
+  type: "bank" | "ewallet" | "cash";
+  category: string;
+  initialBalance: number;
+  showCategory: boolean;
+  createdAt: Date;
+}) {
+  return {
+    id: row.id,
+    name: row.name,
+    institution: row.institution,
+    type: row.type,
+    category: row.category,
+    initialBalance: row.initialBalance,
+    showCategory: row.showCategory,
+    createdAt: row.createdAt,
+  };
+}
+
+/** Kategori: kontrak UI (slug milik protokol pairing, bukan UI). */
+function stripCategorySync(row: {
+  id: string;
+  name: string;
+  kind: "expense" | "income";
+  icon: string;
+  color: string;
+}) {
+  return {
+    id: row.id,
+    name: row.name,
+    kind: row.kind,
+    icon: row.icon,
+    color: row.color,
+  };
+}
+
+/** Transfer: kontrak UI (tanpa deletedAt/serverSeq). */
+function stripTransferSync(row: {
+  id: string;
+  fromAccountId: string;
+  toAccountId: string;
+  amount: number;
+  note: string | null;
+  occurredAt: Date;
+  createdAt: Date;
+}) {
+  return {
+    id: row.id,
+    fromAccountId: row.fromAccountId,
+    toAccountId: row.toAccountId,
+    amount: row.amount,
+    note: row.note,
+    occurredAt: row.occurredAt,
+    createdAt: row.createdAt,
+  };
+}
+
 /** DataSource di atas klien Eden Treaty (HTTP ke API yang sama). */
 export class HttpDataSource implements DataSource {
   /** Daftar transaksi satu bulan; `kind` hanya dikirim bila difilter. */
@@ -18,7 +169,7 @@ export class HttpDataSource implements DataSource {
     });
     if (error) throw error;
     if (isErrorBody(data)) throw data;
-    return data ?? [];
+    return (data ?? []).map(stripTransactionSync);
   }
 
   /** Transaksi satu hari `YYYY-MM-DD` (zona Asia/Jakarta) untuk layar Activity. */
@@ -28,7 +179,7 @@ export class HttpDataSource implements DataSource {
     });
     if (error) throw error;
     if (isErrorBody(data)) throw data;
-    return data ?? [];
+    return (data ?? []).map(stripTransactionSync);
   }
 
   /**
@@ -48,7 +199,8 @@ export class HttpDataSource implements DataSource {
     const { data, error } = await api.api.transactions({ id }).get();
     if (error) throw error;
     if (isErrorBody(data)) throw data;
-    return data;
+    if (!data) return data;
+    return stripTransactionSync(data);
   }
 
   /** Ringkasan akun + saldo terhitung untuk opsi akun dan pratinjau. */
@@ -57,7 +209,10 @@ export class HttpDataSource implements DataSource {
     if (error) throw error;
     if (isErrorBody(data)) throw data;
     if (!data) throw new Error("Ringkasan akun kosong.");
-    return data;
+    return {
+      accounts: data.accounts.map(stripAccountSummarySync),
+      totalBalance: data.totalBalance,
+    };
   }
 
   /** Daftar kategori untuk select + resolve nama. */
@@ -65,7 +220,7 @@ export class HttpDataSource implements DataSource {
     const { data, error } = await api.api.categories.get();
     if (error) throw error;
     if (isErrorBody(data)) throw data;
-    return data ?? [];
+    return (data ?? []).map(stripCategorySync);
   }
 
   /** Satu akun (tanpa saldo terhitung) untuk prefill form ubah. */
@@ -73,7 +228,8 @@ export class HttpDataSource implements DataSource {
     const { data, error } = await api.api.accounts({ id }).get();
     if (error) throw error;
     if (isErrorBody(data)) throw data;
-    return data;
+    if (!data) return data;
+    return stripAccountSync(data);
   }
 
   /** N transfer terbaru untuk riwayat di layar Transfer. */
@@ -83,7 +239,7 @@ export class HttpDataSource implements DataSource {
     });
     if (error) throw error;
     if (isErrorBody(data)) throw data;
-    return data ?? [];
+    return (data ?? []).map(stripTransferSync);
   }
 
   /** Ringkasan bulan (masuk/keluar/net) untuk layar Reports. */

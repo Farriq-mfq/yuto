@@ -192,7 +192,7 @@ describe("transactions", () => {
     const tag = randomUUID().slice(0, 8);
     const [row] = await db
       .insert(categories)
-      .values({ name: `Kategori ${tag}`, kind, icon: "box", color: "#000000" })
+      .values({ slug: `test-${tag}`, name: `Kategori ${tag}`, kind, icon: "box", color: "#000000" })
       .returning({ id: categories.id });
     if (!row) throw new Error("Gagal membuat kategori test.");
     categoryIds.push(row.id);
@@ -502,7 +502,8 @@ describe("transactions", () => {
       authed(`/api/transactions/${income.id}`, cookie, { method: "DELETE" }),
     );
     expect(deleted.status).toBe(200);
-    transactionIds.splice(transactionIds.indexOf(income.id), 1);
+    // Soft delete: keep the id tracked so afterEach hard-deletes the
+    // tombstone; the balance assertion below proves it is excluded.
     expect(await summaryBalance(app, cookie, accountId)).toBe(-10000);
   });
 

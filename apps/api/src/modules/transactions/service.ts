@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, lt, type SQL } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, lt, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db/client";
 import {
   JakartaTimeError,
@@ -126,11 +126,13 @@ export async function listTransactions(
   if (filter.accountId !== undefined) {
     conditions.push(eq(transactions.accountId, filter.accountId));
   }
+  // Sync: tombstones stay in the table for pull; UI reads see live rows only.
+  conditions.push(isNull(transactions.deletedAt));
 
   const rows = await db
     .select()
     .from(transactions)
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .where(and(...conditions))
     .orderBy(desc(transactions.occurredAt), desc(transactions.id));
   if (rows.length === 0) return [];
 
@@ -138,9 +140,12 @@ export async function listTransactions(
     .select()
     .from(transactionItems)
     .where(
-      inArray(
-        transactionItems.transactionId,
-        rows.map((row) => row.id),
+      and(
+        inArray(
+          transactionItems.transactionId,
+          rows.map((row) => row.id),
+        ),
+        isNull(transactionItems.deletedAt),
       ),
     );
   const byTransaction = new Map<string, TransactionItem[]>();
@@ -161,12 +166,17 @@ export async function getTransactionById(
   const [row] = await db
     .select()
     .from(transactions)
-    .where(eq(transactions.id, id));
+    .where(and(eq(transactions.id, id), isNull(transactions.deletedAt)));
   if (!row) return null;
   const items = await db
     .select()
     .from(transactionItems)
-    .where(eq(transactionItems.transactionId, id));
+    .where(
+      and(
+        eq(transactionItems.transactionId, id),
+        isNull(transactionItems.deletedAt),
+      ),
+    );
   return { ...row, items };
 }
 
@@ -176,7 +186,8 @@ export async function createTransaction(
   const [account] = await db
     .select({ id: accounts.id })
     .from(accounts)
-    .where(eq(accounts.id, input.accountId))
+    // A tombstoned account is gone for new writes, same as a missing one.
+    .where(and(eq(accounts.id, input.accountId), isNull(accounts.deletedAt)))
     .limit(1);
   if (!account) {
     throw new TransactionInputError(
@@ -261,7 +272,7 @@ export async function updateTransaction(
     const [account] = await db
       .select({ id: accounts.id })
       .from(accounts)
-      .where(eq(accounts.id, accountId))
+      .where(and(eq(accounts.id, accountId), isNull(accounts.deletedAt)))
       .limit(1);
     if (!account) {
       throw new TransactionInputError(
@@ -366,10 +377,22 @@ export async function deleteTransaction(id: string): Promise<boolean> {
   const [row] = await db
     .select({ id: transactions.id })
     .from(transactions)
-    .where(eq(transactions.id, id))
+    .where(and(eq(transactions.id, id), isNull(transactions.deletedAt)))
     .limit(1);
   if (!row) return false;
-  // Items follow via ON DELETE CASCADE.
-  await db.delete(transactions).where(eq(transactions.id, id));
+  // Phase 11: soft delete. The parent tombstone bumps server_seq so pull
+  // sees the delete; its items are tombstoned along (no cursor bump needed,
+  // items only ever travel nested inside their transaction).
+  const now = new Date();
+  await db.transaction(async (tx) => {
+    await tx
+      .update(transactions)
+      .set({ deletedAt: now, serverSeq: sql`nextval('sync_seq')` })
+      .where(eq(transactions.id, id));
+    await tx
+      .update(transactionItems)
+      .set({ deletedAt: now })
+      .where(eq(transactionItems.transactionId, id));
+  });
   return true;
 }

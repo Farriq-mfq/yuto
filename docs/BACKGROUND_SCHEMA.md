@@ -22,10 +22,13 @@ export const accounts = pgTable("accounts", {
   initialBalance: money("initial_balance").notNull().default(0),
   showCategory: boolean("show_category").notNull().default(true),
   createdAt: ts("created_at"),
-});
+  deletedAt: timestamp("deleted_at", { withTimezone: true }), // NULL = alive (sync tombstone)
+  serverSeq: bigint("server_seq", { mode: "number" }).notNull().default(sql`nextval('sync_seq')`),
+}, (t) => [index("accounts_server_seq_idx").on(t.serverSeq)]);
 
 export const categories = pgTable("categories", {
   id: pk(),
+  slug: text("slug").notNull().unique(),               // stable cross-device identity, see Seed
   name: text("name").notNull(),
   kind: txKind("kind").notNull(),
   icon: text("icon").notNull(),
@@ -47,9 +50,12 @@ export const transactions = pgTable("transactions", {
   longitude: doublePrecision("longitude"),
   createdAt: ts("created_at"),
   updatedAt: ts("updated_at"),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  serverSeq: bigint("server_seq", { mode: "number" }).notNull().default(sql`nextval('sync_seq')`),
 }, (t) => [
   index("tx_time_idx").on(t.occurredAt),
   index("tx_account_idx").on(t.accountId),
+  index("tx_server_seq_idx").on(t.serverSeq),
   check("tx_amount_positive", sql`${t.amount} > 0`),
 ]);
 
@@ -59,7 +65,12 @@ export const transactionItems = pgTable("transaction_items", {
   name: text("name").notNull(),
   quantity: integer("quantity").notNull().default(1),
   unitPrice: money("unit_price").notNull(),
-}, (t) => [check("item_qty_positive", sql`${t.quantity} > 0`)]);
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  serverSeq: bigint("server_seq", { mode: "number" }).notNull().default(sql`nextval('sync_seq')`),
+}, (t) => [
+  index("tx_item_server_seq_idx").on(t.serverSeq),
+  check("item_qty_positive", sql`${t.quantity} > 0`)
+]);
 
 export const transfers = pgTable("transfers", {
   id: pk(),
@@ -69,10 +80,22 @@ export const transfers = pgTable("transfers", {
   note: text("note"),
   occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
   createdAt: ts("created_at"),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  serverSeq: bigint("server_seq", { mode: "number" }).notNull().default(sql`nextval('sync_seq')`),
 }, (t) => [
+  index("transfers_server_seq_idx").on(t.serverSeq),
   check("transfer_amount_positive", sql`${t.amount} > 0`),
   check("transfer_distinct_accounts", sql`${t.fromAccountId} <> ${t.toAccountId}`),
 ]);
+
+export const devices = pgTable("devices", {
+  id: pk(),
+  name: text("name").notNull(),
+  tokenHash: text("token_hash").notNull().unique(),    // SHA-256 of the device token, never the token
+  createdAt: ts("created_at"),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }), // NULL = never seen
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),    // non-NULL = blocked from sync
+});
 ```
 
 ## Relations
@@ -98,6 +121,24 @@ FROM accounts a;
 ## Seed (default categories)
 Expense: Shopping, Food & Drink, Bills & Utilities, Transport, Health, Entertainment, Education, Other.
 Income: Salary, Bonus, Project, Gift, Other.
+
+Each row carries a stable `slug` (`TEXT NOT NULL UNIQUE`) that is the cross-device identity — sync matches categories on slug, never on id. The server slugs are byte-identical to `packages/local/src/seed.ts`: `expense-shopping`, `expense-food-drink`, `expense-bills-utilities`, `expense-transport`, `expense-health`, `expense-entertainment`, `expense-education`, `expense-other`, `income-salary`, `income-bonus`, `income-project`, `income-gift`, `income-other` (the two `Lainnya` rows share a display name but differ by kind prefix). `apps/api/src/db/seed.ts` inserts with these slugs; migration `0001` backfills them onto pre-existing rows by `(kind, name)` (unknown rows get `'custom-' || id`, collisions get a `-<id-prefix>` suffix).
+
+## Server sync fields (migration `0001`, Phase 11 part 1)
+
+| Column | Type | Meaning |
+|---|---|---|
+| `deleted_at` | `timestamptz` NULL (accounts, transactions, transaction_items, transfers) | Soft-delete tombstone; NULL = alive. Rows are never hard-deleted once synced |
+| `server_seq` | `bigint NOT NULL DEFAULT nextval('sync_seq')` (same 4 tables) | Monotonic pull cursor, stamped once at insert |
+| `categories.slug` | `TEXT NOT NULL UNIQUE` | Cross-device identity, see Seed above |
+| `devices` | new table (`id`, `name`, `token_hash UNIQUE NOT NULL`, `created_at`, `last_seen_at NULL`, `revoked_at NULL`) | One row per paired device; only the token hash is stored |
+
+Cursor mechanics (one sequence, stable per row):
+
+- `CREATE SEQUENCE sync_seq` (migration `0001`, created before the columns that use it). It is intentionally **not** `OWNED BY` any single column — four tables share it — so dropping a table will not drop the sequence; drop it manually if the sync model is ever removed.
+- Fresh inserts get `server_seq` from the column `DEFAULT nextval('sync_seq')`. A `BEFORE INSERT OR UPDATE` trigger per table (`stamp_server_seq()`, one function shared by all four) assigns `nextval` **only when `server_seq IS NULL`** and leaves explicit values untouched. In practice the DEFAULT fires first so the trigger is a safety net; its real job is the guarantee: replayed pushes (upserts carrying the original `server_seq`) keep the row's cursor, and plain `UPDATE`s never move it.
+- Consequence: `server_seq` orders **inserts**, not edits. Pull (`WHERE server_seq > $cursor ORDER BY server_seq`, served by the per-table `*_server_seq_idx` btree indexes) sees new rows and tombstones, but an edit to an old row does not bump its cursor — a later phase must decide how edits are detected (e.g. per-table `updated_at`, which today only `transactions` has).
+- Backfill note: `ADD COLUMN server_seq ... NOT NULL` on existing rows consumes one `nextval` per row (order unspecified); all pre-sync rows land below any future cursor. `categories.slug` is added NULLABLE, backfilled, de-duplicated, then `SET NOT NULL` + `UNIQUE` — a single `ADD COLUMN ... NOT NULL` would fail on non-empty tables.
 
 ## Migrations
 `bunx drizzle-kit generate` then commit the SQL in `apps/api/drizzle/`. Never edit an applied migration; add a new one.
