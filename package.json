@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "dev": "bun --parallel run dev:api dev:web",
-    "dev:api": "bun run --cwd apps/api dev",
+    "dev:api": "bun --env-file=.env --watch apps/api/src/index.ts",
     "dev:web": "bun run --cwd apps/web dev",
     "dev:docker": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build",
     "dev:docker:down": "docker compose -f docker-compose.yml -f docker-compose.dev.yml down",
