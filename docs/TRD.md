@@ -98,3 +98,22 @@ The API refuses to start if `JWT_SECRET` is missing or shorter than 32 chars, if
 - p95 API response under 200 ms with 10k transactions (indexes in schema).
 - UI works at 360 px width; WCAG AA contrast; touch targets at least 44 px.
 - Logs: structured, never include passwords or tokens.
+
+## 10. Standalone edition (on-device data engine)
+- UI talks to a `DataSource` interface (`apps/web/src/lib/datasource.ts`).
+  `HttpDataSource` wraps the Eden client (server-backed); `LocalDataSource`
+  (`apps/web/src/lib/local/`) implements the same interface on SQLite.
+- Shared logic lives in `packages/core` (rupiah, Jakarta time, report
+  percent/change, item-sum and kind checks); the local schema in
+  `packages/local` mirrors `docs/BACKGROUND_SCHEMA.md` (integer rupiah,
+  same checks) plus sync fields (`updated_at`, `deleted_at`, `dirty`,
+  `slug` on categories). Times are integer ms epoch; ids are
+  client-generated UUIDs.
+- `LocalDataSource` takes its database via constructor injection so tests
+  use `bun:sqlite` (`:memory:`) while future native shells inject their own
+  driver. The same behavior suite runs against both engines.
+- On-device migrations in `packages/local/drizzle/` run on start (own
+  journal table, baseline for pre-existing v1 databases).
+- Export/import (`formatVersion: 1` JSON: accounts, categories,
+  transactions with items, transfers incl. tombstones) replaces backup for
+  standalone installs.

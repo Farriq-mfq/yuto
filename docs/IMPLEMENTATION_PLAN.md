@@ -68,12 +68,12 @@ Order matters: each phase ends in something that runs and has tests.
 - Done when: the app behaves exactly as before and all tests pass.
 
 ## Phase 9: On-device data engine
-- [ ] Drizzle SQLite schema mirroring `docs/BACKGROUND_SCHEMA.md` (integer rupiah, same checks). Sync-ready from day one: UUID ids generated on the client; `updated_at` and `deleted_at` (soft delete) on accounts, transactions, transaction_items, and transfers; a `dirty` flag; a stable `slug` on categories. Document it in the same file.
-- [ ] `LocalDataSource` implementing `DataSource` on SQLite: same balance SQL but ignoring deleted rows, deletes are soft deletes, transfers inside one SQLite transaction, categories seeded by slug.
-- [ ] Run the same behavior tests against `LocalDataSource` using `bun:sqlite` in CI. Both implementations must pass the identical suite.
-- [ ] On-device migrations bundled with the app and run on start; test upgrading a database created by the previous version.
-- [ ] Export and import (backup replacement): one file with a format version; test export -> fresh install -> import -> identical balances.
-- [ ] Docs: add a "Standalone edition" section to PRD and TRD.
+- [x] Drizzle SQLite schema mirroring `docs/BACKGROUND_SCHEMA.md` (integer rupiah, same checks). Sync-ready from day one: UUID ids generated on the client; `updated_at` and `deleted_at` (soft delete) on accounts, transactions, transaction_items, and transfers; a `dirty` flag; a stable `slug` on categories. Document it in the same file.
+- [x] `LocalDataSource` implementing `DataSource` on SQLite: same balance SQL but ignoring deleted rows, deletes are soft deletes, transfers inside one SQLite transaction, categories seeded by slug.
+- [x] Run the same behavior tests against `LocalDataSource` using `bun:sqlite` in CI. Both implementations must pass the identical suite.
+- [x] On-device migrations bundled with the app and run on start; test upgrading a database created by the previous version.
+- [x] Export and import (backup replacement): one file with a format version; test export -> fresh install -> import -> identical balances.
+- [x] Docs: add a "Standalone edition" section to PRD and TRD.
 - Done when: the UI runs fully on `LocalDataSource` and every shared test passes on both engines.
 
 ## Phase 10: Android app (Capacitor)
