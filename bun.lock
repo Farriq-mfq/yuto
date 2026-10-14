@@ -29,7 +29,6 @@
       "version": "0.1.0",
       "dependencies": {
         "@aparajita/capacitor-biometric-auth": "^8.0.2",
-        "@aparajita/capacitor-secure-storage": "^8.0.1",
         "@base-ui/react": "^1.9.0",
         "@capacitor-community/sqlite": "^8.1.1",
         "@capacitor/android": "^8.5.3",
@@ -53,7 +52,7 @@
         "react-day-picker": "^10.0.2",
         "react-dom": "^18.3.1",
         "react-router-dom": "^6.28.0",
-        "recharts": "3.8.0",
+        "recharts": "3.10.1",
         "sonner": "^2.0.8",
         "vite-plugin-pwa": "^2.0.0",
         "workbox-window": "^7.4.1",
@@ -93,8 +92,6 @@
   },
   "packages": {
     "@aparajita/capacitor-biometric-auth": ["@aparajita/capacitor-biometric-auth@8.0.2", "", { "dependencies": { "@capacitor/android": "^6.1.0", "@capacitor/app": "^6.0.0", "@capacitor/core": "^6.1.0", "@capacitor/ios": "^6.1.0" } }, "sha512-f5EHwJYkwQDM/FmoZoyOTmBs/3XEcYURZDUNyps9+Fn7WrgojtJuZP8GhfW7KrQGqCok+ctDd369nEAmNiTxfw=="],
-
-    "@aparajita/capacitor-secure-storage": ["@aparajita/capacitor-secure-storage@8.0.1", "", { "dependencies": { "@capacitor/android": "^8.0.2", "@capacitor/app": "^8.0.0", "@capacitor/core": "^8.0.2", "@capacitor/ios": "^8.0.2", "@capacitor/keyboard": "^8.0.0" } }, "sha512-NSYIQtH6TyBgL3myumQGcCE3iecq2PtGNFlGxl1fJKEU37Dv5DudzDlwg42cgbVxCm1ay72g4X7rTSAvKULsVg=="],
 
     "@apideck/better-ajv-errors": ["@apideck/better-ajv-errors@0.3.7", "", { "dependencies": { "jsonpointer": "^5.0.1", "leven": "^3.1.0" }, "peerDependencies": { "ajv": ">=8" } }, "sha512-TajUJwGWbDwkCx/CZi7tRE8PVB7simCvKJfHUsSdvps+aTM/PDPP4gkLmKnc+x3CE//y9i/nj74GqdL/hwk7Iw=="],
 
@@ -305,8 +302,6 @@
     "@capacitor/core": ["@capacitor/core@8.5.3", "", { "dependencies": { "tslib": "^2.1.0" } }, "sha512-oBE1oGuYE4ZzYYrulC75OuHdSsD6zLUy7d5o1tFwDLG4govGoubY15cxpiI5l0+q87Lm5p0bhbehMdzJg4aFag=="],
 
     "@capacitor/ios": ["@capacitor/ios@6.2.2", "", { "peerDependencies": { "@capacitor/core": "^6.2.0" } }, "sha512-dc9upo3L5wSUVJBJnd7oRGGsiwB2rMe7ZF2bti8hvDVCAZeYMzzw8iqxuUc6cvGBhH2/LsORMBO51/vEQhdmHg=="],
-
-    "@capacitor/keyboard": ["@capacitor/keyboard@8.0.6", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-Bbe+9V0qaT6dzEFJEK7BUWR01l2+vZE8FM5ITF/WgKtx+G6eGZ6d5+YiSMRJBAK0VGjdO59v8yiQ10Doa5KyvQ=="],
 
     "@date-fns/tz": ["@date-fns/tz@1.5.0", "", {}, "sha512-lwYN/vDPeNRULcepoE/LO2Pgx+7/RV+S9ARfbc9lr2DtGkOD7pAiruHvbR1RX3Qyf6ja47EWJDMsNK5vK08DJg=="],
 
@@ -1108,7 +1103,7 @@
 
     "immediate": ["immediate@3.0.6", "", {}, "sha512-XXOFtyqDjNDAQxVfYxuF7g9Il/IbWmmlQg2MYKOH8ExIT1qg6xc4zyS3HaEEATgs1btfzxq15ciUiY7gjSXRGQ=="],
 
-    "immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
+    "immer": ["immer@11.1.21", "", {}, "sha512-bZSadeCPGdaY5/qRLgr6mDSH1ra21rD3rqpiWk7+QTr4ayYPTE9qZYdLh/NdPhMe0wSrTvHD/Lk8q5EwhUs0aw=="],
 
     "inherits": ["inherits@2.0.4", "", {}, "sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ=="],
 
@@ -1432,7 +1427,7 @@
 
     "recast": ["recast@0.23.21", "", { "dependencies": { "ast-types": "^0.16.1", "esprima": "~4.0.0", "source-map": "~0.6.1", "tiny-invariant": "^1.3.3", "tslib": "^2.0.1" } }, "sha512-mFAyJq9vUbSTARLZUvAEf1z3YxlvAwswbmxMx2mPA/MSm4KmpwvwvhsH/NIrZhyOuwD60Lzyw2qh83uCbgTPYw=="],
 
-    "recharts": ["recharts@3.8.0", "", { "dependencies": { "@reduxjs/toolkit": "^1.9.0 || 2.x.x", "clsx": "^2.1.1", "decimal.js-light": "^2.5.1", "es-toolkit": "^1.39.3", "eventemitter3": "^5.0.1", "immer": "^10.1.1", "react-redux": "8.x.x || 9.x.x", "reselect": "5.1.1", "tiny-invariant": "^1.3.3", "use-sync-external-store": "^1.2.2", "victory-vendor": "^37.0.2" }, "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-is": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-Z/m38DX3L73ExO4Tpc9/iZWHmHnlzWG4njQbxsF5aSjwqmHNDDIm0rdEBArkwsBvR8U6EirlEHiQNYWCVh9sGQ=="],
+    "recharts": ["recharts@3.10.1", "", { "dependencies": { "@reduxjs/toolkit": "^1.9.0 || 2.x.x", "clsx": "^2.1.1", "decimal.js-light": "^2.5.1", "es-toolkit": "^1.39.3", "eventemitter3": "^5.0.1", "immer": "^11.1.8", "react-redux": "8.x.x || 9.x.x", "reselect": "5.2.0", "tiny-invariant": "^1.3.3", "use-sync-external-store": "^1.2.2", "victory-vendor": "^37.0.2" }, "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-is": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-QXFrvt6IVcw7eeZCoyXTwkIJAX3Dv1nyVhMicXJ47GsGDDpcN8z6o644DibE9XjpBTThtsomLKnTV6lc+cVFUA=="],
 
     "redux": ["redux@5.0.1", "", {}, "sha512-M9/ELqF6fy8FwmkpnF0S3YKOqMyoWJ4+CS5Efg2ct3oY9daQvd/Pc71FpGZsVsbl3Cpb+IIcjBDUnnyBdQbq4w=="],
 
@@ -1454,7 +1449,7 @@
 
     "require-from-string": ["require-from-string@2.0.2", "", {}, "sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw=="],
 
-    "reselect": ["reselect@5.1.1", "", {}, "sha512-K/BG6eIky/SBpzfHZv/dd+9JBFiS4SWV7FIujVyJRux6e45+73RaUHXLmIR1f7WOMaQ0U1km6qwklRQxpJJY0w=="],
+    "reselect": ["reselect@5.2.0", "", {}, "sha512-AgZ3UOZm3YndfrJ4OYjgrT7bmCm/1iqkjvEfH/oYjzh6PD2qw4QuT3jjnXIrpdt4MTpMXclMT3lXbmRY+XRakw=="],
 
     "resolve": ["resolve@1.22.13", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.17.0", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-Dj/cW9zBV2aRj6XzCxuGIs3ESZKv02jixne3q6jFZYZ3/Tg09gHHviSMDL4kObh9pqSahdRHEnDoaP2gn8YLhA=="],
 
@@ -1754,8 +1749,6 @@
 
     "@aparajita/capacitor-biometric-auth/@capacitor/core": ["@capacitor/core@6.2.2", "", { "dependencies": { "tslib": "^2.1.0" } }, "sha512-qEI3DcwJEPzhW+hVGKH8m4jbujtkdUiGkpMLHmpR8epACU7wEsV6NF8pCHzpsMYjc80oK7Cmpcw+MIienv/YRw=="],
 
-    "@aparajita/capacitor-secure-storage/@capacitor/ios": ["@capacitor/ios@8.5.3", "", { "peerDependencies": { "@capacitor/core": "^8.5.0" } }, "sha512-HnnV92Jl8+3x0JUloXUMjFcUsQI8wHFVsKwkLn72DfRZXYGZW11tQbmNOWOnRTljaU18FdI1b9ipT09SzzPDNw=="],
-
     "@babel/core/semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
 
     "@babel/helper-compilation-targets/semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
@@ -1779,8 +1772,6 @@
     "@ionic/utils-fs/fs-extra": ["fs-extra@9.1.0", "", { "dependencies": { "at-least-node": "^1.0.0", "graceful-fs": "^4.2.0", "jsonfile": "^6.0.1", "universalify": "^2.0.0" } }, "sha512-hcg3ZmepS30/7BSFqRvoo3DOMQu7IjqxO5nCDt+zM9XWjb33Wg7ziNT+Qvqbuc3+gWpzO02JubVyk2G4Zvo1OQ=="],
 
     "@modelcontextprotocol/sdk/jose": ["jose@6.2.12", "", {}, "sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw=="],
-
-    "@reduxjs/toolkit/immer": ["immer@11.1.21", "", {}, "sha512-bZSadeCPGdaY5/qRLgr6mDSH1ra21rD3rqpiWk7+QTr4ayYPTE9qZYdLh/NdPhMe0wSrTvHD/Lk8q5EwhUs0aw=="],
 
     "@reduxjs/toolkit/reselect": ["reselect@5.3.0", "", {}, "sha512-XGoLeRAVzUTcJ1qkxPQhDJyIZ5d6zzZD9nT7AEZOaaU9UbWclhycElmhO+VD5bFeLuzhPBaOV2oXC8uG35ZSpg=="],
 
