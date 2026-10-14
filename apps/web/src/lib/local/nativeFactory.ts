@@ -1,9 +1,9 @@
 import { drizzle as drizzleProxy } from "drizzle-orm/sqlite-proxy";
-import type { SQLiteDBConnection } from "@capacitor-community/sqlite";
 import * as localSchema from "@yuto/local/schema";
 import { LocalDataSource, type LocalDb } from "./localDataSource";
 import { applyMigrations, type NativeConnection } from "./nativeMigrate";
-import { NATIVE_SEED_CATEGORIES } from "./nativeSeedData";
+import { createProxyCallback, toBindable } from "./nativeProxy";
+import { seedDefaultCategories } from "./nativeSeedData";
 // why: file .sql migrasi tetap satu-satunya sumber kebenaran (milik
 // packages/local, dihasilkan drizzle-kit). ?raw menanam isinya ke bundle
 // native saat build; bila drizzle-kit generate nama baru, import ini gagal
@@ -72,21 +72,14 @@ async function openNativeDataSource(): Promise<LocalDataSource> {
     { name: "0000_lean_pixie.sql", sql: mig0000 },
     { name: "0001_handy_preak.sql", sql: mig0001 },
   ]);
-  await seedDefaultCategories(conn);
-  const db = drizzleProxy(
-    async (sqlText, params, method) => {
-      const values = toBindable(params);
-      // why: hanya 'run' (insert/update/delete tanpa returning) yang tak
-      // mengembalikan baris; 'all'/'get'/'values' semuanya dibaca via query.
-      if (method === "run") {
-        await conn.run(sqlText, values);
-        return { rows: [] };
-      }
-      const ret = await conn.query(sqlText, values);
-      return { rows: (ret.values ?? []) as Record<string, unknown>[] };
-    },
-    { schema: localSchema },
-  );
+  // why: callback proxy sadar-transaksi (lihat `nativeProxy.ts`) — tanpanya
+  // `begin`/`commit` mentah dari `db.transaction()` dibungkus transaksi
+  // plugin per-statement dan gagal nested, sehingga semua simpan gagal.
+  const db = drizzleProxy(createProxyCallback(conn), { schema: localSchema });
+  // why: seed SETELAH migrasi lewat db proxy yang sama dengan tulis aplikasi
+  // (bukan `conn.executeSet` mentah) agar tercakup jalur teruji; tanpa
+  // `.returning()` agar aman di SQLite Android lama.
+  await seedDefaultCategories(db);
   // why: cast batas-sistem — LocalDb dideklarasikan sebagai BunSQLiteDatabase
   // (dipakai test bun), tapi LocalDataSource hanya memakai permukaan query
   // yang identik di kedua driver dan semuanya di-await (lihat catatan
@@ -126,40 +119,4 @@ async function ensureDatabaseEncryption(
     // setelah secret tersimpan) — buat baru langsung terenkripsi.
     return "secret";
   }
-}
-
-/**
- * Seed 13 kategori default, idempoten per slug (baris user tak disentuh).
- * Raw INSERT OR IGNORE — bukan drizzle `.returning()` — karena SQLite bawaan
- * Android lama belum tentu mendukung klausa RETURNING.
- */
-async function seedDefaultCategories(conn: SQLiteDBConnection): Promise<void> {
-  const now = Date.now();
-  const set = NATIVE_SEED_CATEGORIES.map((category) => ({
-    statement:
-      'INSERT OR IGNORE INTO "categories" ("id", "slug", "name", "kind", "icon", "color", "updated_at", "deleted_at", "dirty") VALUES (?, ?, ?, ?, ?, ?, ?, NULL, 1);',
-    values: [
-      crypto.randomUUID(),
-      category.slug,
-      category.name,
-      category.kind,
-      category.icon,
-      category.color,
-      now,
-    ],
-  }));
-  await conn.executeSet(set, false);
-}
-
-/**
- * Normalisasi parameter Bound ke tipe yang didukung bridge Capacitor
- * (boolean → 0/1, undefined → null, Date → epoch ms).
- */
-function toBindable(values: readonly unknown[] | undefined): unknown[] {
-  return (values ?? []).map((value) => {
-    if (typeof value === "boolean") return value ? 1 : 0;
-    if (value === undefined) return null;
-    if (value instanceof Date) return value.getTime();
-    return value;
-  });
 }

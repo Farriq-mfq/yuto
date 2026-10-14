@@ -570,7 +570,11 @@ export class LocalDataSource implements DataSource {
     // why: callback async + statement di-await (bukan .run() sync) agar jalan
     // di driver async sqlite-proxy/Capacitor. Di bun:sqlite (dipakai test)
     // statement tetap dieksekusi berurutan; atomisitas rollback penuh hanya
-    // dijamin driver async (proxy mengirim begin/commit/rollback).
+    // dijamin driver async. Di perangkat, `begin`/`commit` mentah dari
+    // transaksi ini DITERJEMAHKAN adapter `nativeProxy.ts` menjadi satu
+    // `executeSet` atomik — jangan pernah kirim kontrol transaksi mentah ke
+    // `conn.run()` (plugin membungkus tiap statement dalam transaksinya
+    // sendiri sehingga `begin` gagal nested).
     await this.db.transaction(async (tx) => {
       await tx
         .insert(transactions)
