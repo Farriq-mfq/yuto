@@ -749,13 +749,13 @@ describe("sync pull", () => {
       const page1 = (await (
         await app.handle(bearer(`/api/sync/pull?since=${base}&limit=2`, token))
       ).json()) as PullBody;
-      expect(page1.accounts.map((row) => row.id)).toEqual([ids[0], ids[1]]);
+      expect(page1.accounts.map((row) => row.id)).toEqual(ids.slice(0, 2));
       expect(page1.cursor).toBeGreaterThan(base);
       expect(Array.isArray(page1.categories)).toBe(true);
       const page2 = (await (
         await app.handle(bearer(`/api/sync/pull?since=${page1.cursor}`, token))
       ).json()) as PullBody;
-      expect(page2.accounts.map((row) => row.id)).toEqual([ids[2]]);
+      expect(page2.accounts.map((row) => row.id)).toEqual(ids.slice(2, 3));
       const page3 = (await (
         await app.handle(bearer(`/api/sync/pull?since=${page2.cursor}`, token))
       ).json()) as PullBody;

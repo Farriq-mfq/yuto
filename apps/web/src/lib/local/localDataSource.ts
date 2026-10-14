@@ -34,6 +34,7 @@ import type {
 const {
   accounts,
   categories,
+  syncState,
   transactionItems,
   transactions,
   transfers,
@@ -849,4 +850,539 @@ export class LocalDataSource implements DataSource {
       requirePositiveInt(item.unitPrice);
     }
   }
+
+  // ---------------------------------------------------------- sync support
+  // Metode di bawah HANYA untuk mesin sync (engine di lib/sync), bukan untuk
+  // layar. Bentuk row memakai ms-epoch (seperti kolom SQLite), bukan ISO.
+
+  async getDirtyAccounts(): Promise<DirtyAccount[]> {
+    return this.db
+      .select({
+        id: accounts.id,
+        name: accounts.name,
+        institution: accounts.institution,
+        type: accounts.type,
+        category: accounts.category,
+        initialBalance: accounts.initialBalance,
+        showCategory: accounts.showCategory,
+        updatedAt: accounts.updatedAt,
+        deletedAt: accounts.deletedAt,
+      })
+      .from(accounts)
+      .where(eq(accounts.dirty, 1));
+  }
+
+  async getDirtyTransactions(): Promise<DirtyTransaction[]> {
+    const rows = await this.db
+      .select({
+        id: transactions.id,
+        accountId: transactions.accountId,
+        categoryId: transactions.categoryId,
+        kind: transactions.kind,
+        title: transactions.title,
+        amount: transactions.amount,
+        occurredAt: transactions.occurredAt,
+        note: transactions.note,
+        locationName: transactions.locationName,
+        address: transactions.address,
+        latitude: transactions.latitude,
+        longitude: transactions.longitude,
+        updatedAt: transactions.updatedAt,
+        deletedAt: transactions.deletedAt,
+        categorySlug: categories.slug,
+      })
+      .from(transactions)
+      .leftJoin(categories, eq(transactions.categoryId, categories.id))
+      .where(eq(transactions.dirty, 1));
+    if (rows.length === 0) return [];
+    const itemRows = await this.db
+      .select({
+        id: transactionItems.id,
+        transactionId: transactionItems.transactionId,
+        name: transactionItems.name,
+        quantity: transactionItems.quantity,
+        unitPrice: transactionItems.unitPrice,
+        updatedAt: transactionItems.updatedAt,
+      })
+      .from(transactionItems)
+      .where(
+        inArray(
+          transactionItems.transactionId,
+          rows.map((row) => row.id),
+        ),
+      );
+    const byTransaction = new Map<string, DirtyItem[]>();
+    for (const item of itemRows) {
+      const list = byTransaction.get(item.transactionId) ?? [];
+      list.push(item);
+      byTransaction.set(item.transactionId, list);
+    }
+    return rows.map((row) => ({
+      transaction: {
+        id: row.id,
+        accountId: row.accountId,
+        categoryId: row.categoryId,
+        kind: row.kind,
+        title: row.title,
+        amount: row.amount,
+        occurredAt: row.occurredAt,
+        note: row.note,
+        locationName: row.locationName,
+        address: row.address,
+        latitude: row.latitude,
+        longitude: row.longitude,
+        updatedAt: row.updatedAt,
+        deletedAt: row.deletedAt,
+      },
+      categorySlug: row.categorySlug,
+      items: byTransaction.get(row.id) ?? [],
+    }));
+  }
+
+  async getDirtyTransfers(): Promise<DirtyTransfer[]> {
+    return this.db
+      .select({
+        id: transfers.id,
+        fromAccountId: transfers.fromAccountId,
+        toAccountId: transfers.toAccountId,
+        amount: transfers.amount,
+        note: transfers.note,
+        occurredAt: transfers.occurredAt,
+        updatedAt: transfers.updatedAt,
+        deletedAt: transfers.deletedAt,
+      })
+      .from(transfers)
+      .where(eq(transfers.dirty, 1));
+  }
+
+  async markPushApplied(applied: AppliedMarks): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      for (const row of applied.accounts) {
+        await tx
+          .update(accounts)
+          .set({ dirty: 0 })
+          .where(and(eq(accounts.id, row.id), eq(accounts.updatedAt, row.updatedAt)));
+      }
+      for (const row of applied.transactions) {
+        await tx
+          .update(transactions)
+          .set({ dirty: 0 })
+          .where(
+            and(eq(transactions.id, row.id), eq(transactions.updatedAt, row.updatedAt)),
+          );
+      }
+      for (const row of applied.transactionItems) {
+        await tx
+          .update(transactionItems)
+          .set({ dirty: 0 })
+          .where(
+            and(
+              eq(transactionItems.id, row.id),
+              eq(transactionItems.updatedAt, row.updatedAt),
+            ),
+          );
+      }
+      for (const row of applied.transfers) {
+        await tx
+          .update(transfers)
+          .set({ dirty: 0 })
+          .where(and(eq(transfers.id, row.id), eq(transfers.updatedAt, row.updatedAt)));
+      }
+    });
+  }
+
+  async resurrectAccount(id: string): Promise<void> {
+    requireUuid(id);
+    const now = Date.now();
+    await this.db
+      .update(accounts)
+      .set({ deletedAt: null, updatedAt: now, dirty: 1 })
+      .where(eq(accounts.id, id));
+  }
+
+  async getSyncState(): Promise<SyncState> {
+    const [row] = await this.db
+      .select({ cursor: syncState.cursor, deviceId: syncState.deviceId })
+      .from(syncState)
+      .where(eq(syncState.id, 1));
+    return { cursor: row?.cursor ?? 0, deviceId: row?.deviceId ?? null };
+  }
+
+  async setSyncCursor(cursor: number): Promise<void> {
+    if (!Number.isInteger(cursor) || cursor < 0) throw invalid("Input tidak valid.");
+    await this.db
+      .insert(syncState)
+      .values({ id: 1, cursor })
+      .onConflictDoUpdate({ target: syncState.id, set: { cursor } });
+  }
+
+  async setSyncDevice(deviceId: string | null): Promise<void> {
+    if (deviceId !== null) requireNonEmpty(deviceId, "Input tidak valid.");
+    await this.db
+      .insert(syncState)
+      .values({ id: 1, cursor: 0, deviceId })
+      .onConflictDoUpdate({ target: syncState.id, set: { deviceId } });
+  }
+
+  async resetSyncState(): Promise<void> {
+    await this.db.delete(syncState).where(eq(syncState.id, 1));
+  }
+
+  async getCategorySlugMap(): Promise<Map<string, string>> {
+    const rows = await this.db
+      .select({ id: categories.id, slug: categories.slug })
+      .from(categories);
+    return new Map(rows.map((row) => [row.slug, row.id]));
+  }
+
+  async upsertPulledCategories(cats: PulledCategory[]): Promise<void> {
+    if (cats.length === 0) return;
+    const now = Date.now();
+    await this.db.transaction(async (tx) => {
+      for (const cat of cats) {
+        const [existing] = await tx
+          .select({ id: categories.id })
+          .from(categories)
+          .where(eq(categories.slug, cat.slug))
+          .limit(1);
+        if (existing) {
+          await tx
+            .update(categories)
+            .set({
+              name: cat.name,
+              kind: cat.kind,
+              icon: cat.icon,
+              color: cat.color,
+              updatedAt: now,
+              dirty: 0,
+            })
+            .where(eq(categories.id, existing.id));
+        } else {
+          await tx.insert(categories).values({
+            id: cat.id,
+            slug: cat.slug,
+            name: cat.name,
+            kind: cat.kind,
+            icon: cat.icon,
+            color: cat.color,
+            updatedAt: now,
+            dirty: 0,
+          });
+        }
+      }
+    });
+  }
+
+  async upsertPulledAccounts(rows: PulledAccount[]): Promise<void> {
+    if (rows.length === 0) return;
+    const now = Date.now();
+    await this.db.transaction(async (tx) => {
+      for (const row of rows) {
+        const [existing] = await tx
+          .select({ id: accounts.id, dirty: accounts.dirty, deletedAt: accounts.deletedAt })
+          .from(accounts)
+          .where(eq(accounts.id, row.id))
+          .limit(1);
+        // why: tombstone server menang mutlak bahkan atas edit lokal yang
+        // dirty; baris hidup yang dirty dilewati (tak ditimpa).
+        const liveDirty =
+          existing && existing.deletedAt === null && existing.dirty === 1;
+        if (liveDirty && row.deletedAt === null) continue;
+        const values = {
+          name: row.name,
+          institution: row.institution,
+          type: row.type,
+          category: row.category,
+          initialBalance: row.initialBalance,
+          showCategory: row.showCategory,
+          updatedAt: now,
+          deletedAt: row.deletedAt,
+          dirty: 0,
+        };
+        if (existing) {
+          await tx.update(accounts).set(values).where(eq(accounts.id, row.id));
+        } else {
+          await tx.insert(accounts).values({ id: row.id, createdAt: now, ...values });
+        }
+      }
+    });
+  }
+
+  async upsertPulledTransfers(rows: PulledTransfer[]): Promise<void> {
+    if (rows.length === 0) return;
+    const now = Date.now();
+    await this.db.transaction(async (tx) => {
+      for (const row of rows) {
+        const [existing] = await tx
+          .select({ id: transfers.id, dirty: transfers.dirty, deletedAt: transfers.deletedAt })
+          .from(transfers)
+          .where(eq(transfers.id, row.id))
+          .limit(1);
+        if (existing && existing.deletedAt === null && existing.dirty === 1 && row.deletedAt === null) continue;
+        const values = {
+          fromAccountId: row.fromAccountId,
+          toAccountId: row.toAccountId,
+          amount: row.amount,
+          note: row.note,
+          occurredAt: row.occurredAt,
+          updatedAt: now,
+          deletedAt: row.deletedAt,
+          dirty: 0,
+        };
+        if (existing) {
+          await tx.update(transfers).set(values).where(eq(transfers.id, row.id));
+        } else {
+          await tx.insert(transfers).values({ id: row.id, createdAt: now, ...values });
+        }
+      }
+    });
+  }
+
+  async upsertPulledTransactions(rows: PulledTransaction[]): Promise<void> {
+    if (rows.length === 0) return;
+    const now = Date.now();
+    await this.db.transaction(async (tx) => {
+      for (const row of rows) {
+        const [existing] = await tx
+          .select({ id: transactions.id, dirty: transactions.dirty, deletedAt: transactions.deletedAt })
+          .from(transactions)
+          .where(eq(transactions.id, row.id))
+          .limit(1);
+        const liveDirty =
+          existing && existing.deletedAt === null && existing.dirty === 1;
+        if (!liveDirty || row.deletedAt !== null) {
+          const values = {
+            accountId: row.accountId,
+            categoryId: row.categoryId,
+            kind: row.kind,
+            title: row.title,
+            amount: row.amount,
+            occurredAt: row.occurredAt,
+            note: row.note,
+            locationName: row.locationName,
+            address: row.address,
+            latitude: row.latitude,
+            longitude: row.longitude,
+            updatedAt: now,
+            deletedAt: row.deletedAt,
+            dirty: 0,
+          };
+          if (existing) {
+            await tx.update(transactions).set(values).where(eq(transactions.id, row.id));
+          } else {
+            await tx.insert(transactions).values({ id: row.id, createdAt: now, ...values });
+          }
+        }
+        // Items: hapus yang bersih dan tak ada di server, pertahankan yang
+        // dirty, upsert yang dari server (kecuali versi lokalnya dirty).
+        const serverIds = new Set(row.items.map((item) => item.id));
+        const localItems = await tx
+          .select({ id: transactionItems.id, dirty: transactionItems.dirty })
+          .from(transactionItems)
+          .where(eq(transactionItems.transactionId, row.id));
+        for (const local of localItems) {
+          if (!serverIds.has(local.id) && local.dirty === 0) {
+            await tx.delete(transactionItems).where(eq(transactionItems.id, local.id));
+          }
+        }
+        for (const item of row.items) {
+          const [local] = await tx
+            .select({ id: transactionItems.id, dirty: transactionItems.dirty })
+            .from(transactionItems)
+            .where(eq(transactionItems.id, item.id))
+            .limit(1);
+          if (local && local.dirty === 1) continue;
+          const values = {
+            transactionId: row.id,
+            name: item.name,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            updatedAt: now,
+            dirty: 0,
+          };
+          if (local) {
+            await tx.update(transactionItems).set(values).where(eq(transactionItems.id, item.id));
+          } else {
+            await tx.insert(transactionItems).values({ id: item.id, ...values });
+          }
+        }
+      }
+    });
+  }
+
+  async wipeUserData(): Promise<void> {
+    const { NATIVE_SEED_CATEGORIES } = await import("./nativeSeedData");
+    const now = Date.now();
+    await this.db.transaction(async (tx) => {
+      await tx.delete(transactionItems);
+      await tx.delete(transactions);
+      await tx.delete(transfers);
+      await tx.delete(accounts);
+      await tx.delete(categories);
+      for (const cat of NATIVE_SEED_CATEGORIES) {
+        await tx.insert(categories).values({
+          id: crypto.randomUUID(),
+          slug: cat.slug,
+          name: cat.name,
+          kind: cat.kind,
+          icon: cat.icon,
+          color: cat.color,
+          updatedAt: now,
+          dirty: 0,
+        });
+      }
+    });
+  }
+
+  async countLiveUserData(): Promise<{ accounts: number; transactions: number; transfers: number }> {
+    const [a] = await this.db
+      .select({ n: sql<number>`count(*)` })
+      .from(accounts)
+      .where(isNull(accounts.deletedAt));
+    const [t] = await this.db
+      .select({ n: sql<number>`count(*)` })
+      .from(transactions)
+      .where(isNull(transactions.deletedAt));
+    const [r] = await this.db
+      .select({ n: sql<number>`count(*)` })
+      .from(transfers)
+      .where(isNull(transfers.deletedAt));
+    return { accounts: a?.n ?? 0, transactions: t?.n ?? 0, transfers: r?.n ?? 0 };
+  }
+}
+
+/** Baris kategori dari server (sudah dinormalisasi engine). */
+export interface PulledCategory {
+  id: string;
+  slug: string;
+  name: string;
+  kind: "expense" | "income";
+  icon: string;
+  color: string;
+}
+
+/** Baris akun dari server (waktu ms-epoch, null = hidup). */
+export interface PulledAccount {
+  id: string;
+  name: string;
+  institution: string;
+  type: "bank" | "ewallet" | "cash";
+  category: string;
+  initialBalance: number;
+  showCategory: boolean;
+  createdAt: number;
+  deletedAt: number | null;
+  updatedAt?: number;
+}
+
+/** Baris transaksi dari server + rincian. */
+export interface PulledTransaction {
+  id: string;
+  accountId: string;
+  categoryId: string;
+  kind: "expense" | "income";
+  title: string;
+  amount: number;
+  occurredAt: number;
+  note: string | null;
+  locationName: string | null;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  createdAt: number;
+  updatedAt: number;
+  deletedAt: number | null;
+  items: PulledItem[];
+}
+
+/** Rincian item dari server. */
+export interface PulledItem {
+  id: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  updatedAt?: number;
+}
+
+/** Baris transfer dari server. */
+export interface PulledTransfer {
+  id: string;
+  fromAccountId: string;
+  toAccountId: string;
+  amount: number;
+  note: string | null;
+  occurredAt: number;
+  createdAt: number;
+  deletedAt: number | null;
+  updatedAt?: number;
+}
+
+/** Baris akun dirty untuk push (ms-epoch, deleted_at null = hidup). */
+export interface DirtyAccount {
+  id: string;
+  name: string;
+  institution: string;
+  type: "bank" | "ewallet" | "cash";
+  category: string;
+  initialBalance: number;
+  showCategory: boolean;
+  updatedAt: number;
+  deletedAt: number | null;
+}
+
+/** Baris transaksi dirty + slug kategori + rincian. */
+export interface DirtyTransaction {
+  transaction: {
+    id: string;
+    accountId: string;
+    categoryId: string;
+    kind: "expense" | "income";
+    title: string;
+    amount: number;
+    occurredAt: number;
+    note: string | null;
+    locationName: string | null;
+    address: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    updatedAt: number;
+    deletedAt: number | null;
+  };
+  categorySlug: string | null;
+  items: DirtyItem[];
+}
+
+/** Rincian item dirty. */
+export interface DirtyItem {
+  id: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  updatedAt: number;
+}
+
+/** Baris transfer dirty. */
+export interface DirtyTransfer {
+  id: string;
+  fromAccountId: string;
+  toAccountId: string;
+  amount: number;
+  note: string | null;
+  occurredAt: number;
+  updatedAt: number;
+  deletedAt: number | null;
+}
+
+/** Tanda applied bersyarat (cocokkan updatedAt agar tulisan di tengah flight tetap dirty). */
+export interface AppliedMarks {
+  accounts: Array<{ id: string; updatedAt: number }>;
+  transactions: Array<{ id: string; updatedAt: number }>;
+  transactionItems: Array<{ id: string; updatedAt: number }>;
+  transfers: Array<{ id: string; updatedAt: number }>;
+}
+
+/** Status sync lokal (cursor + device, tepat dua kunci ini). */
+export interface SyncState {
+  cursor: number;
+  deviceId: string | null;
 }

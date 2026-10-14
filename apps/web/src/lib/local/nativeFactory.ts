@@ -10,6 +10,7 @@ import { seedDefaultCategories } from "./nativeSeedData";
 // keras saat build — sengaja, agar tak ada migrasi yang terlewat diam-diam.
 import mig0000 from "@yuto-migrations/0000_lean_pixie.sql?raw";
 import mig0001 from "@yuto-migrations/0001_handy_preak.sql?raw";
+import mig0002 from "@yuto-migrations/0002_loose_iron_patriot.sql?raw";
 
 // Satu-satunya file (selain test) yang boleh import plugin SQLite Capacitor
 // dan drizzle sqlite-proxy. Dimuat LAZY (dynamic import dari
@@ -99,6 +100,7 @@ async function openNativeDataSource(): Promise<LocalDataSource> {
   await applyMigrations(native, [
     { name: "0000_lean_pixie.sql", sql: mig0000 },
     { name: "0001_handy_preak.sql", sql: mig0001 },
+    { name: "0002_loose_iron_patriot.sql", sql: mig0002 },
   ]);
   // why: callback proxy sadar-transaksi (lihat `nativeProxy.ts`) — tanpanya
   // `begin`/`commit` mentah dari `db.transaction()` dibungkus transaksi
