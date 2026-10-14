@@ -101,3 +101,27 @@ Income: Salary, Bonus, Project, Gift, Other.
 
 ## Migrations
 `bunx drizzle-kit generate` then commit the SQL in `apps/api/drizzle/`. Never edit an applied migration; add a new one.
+
+## Local sync fields (`packages/local`, SQLite)
+
+Location: `packages/local/src/schema.ts`, migrations in `packages/local/drizzle/`.
+
+The local engine mirrors every table above, plus three sync columns on **all five tables** and a stable category identity:
+
+| Column | Type (SQLite) | Meaning |
+|---|---|---|
+| `updated_at` | INTEGER ms epoch, NOT NULL, SQL default `(unixepoch() * 1000)` | Last local write; conflict resolution (last-writer-wins per row) |
+| `deleted_at` | INTEGER ms epoch, NULL = alive | Soft-delete tombstone; rows are never hard-deleted once synced |
+| `dirty` | INTEGER 0/1, NOT NULL, `CHECK IN (0,1)`, SQL default 0 | 1 = needs push to server |
+| `categories.slug` | TEXT NOT NULL UNIQUE (e.g. `expense-shopping`) | Cross-device identity; seed upserts and sync match on slug, not id |
+
+Dialect decisions (SQLite has no `timestamptz`, `bigint`, `uuid`, or enums):
+
+- **Time is INTEGER ms epoch** (`Date.now()`), never TEXT. It sorts/compares natively and converts losslessly both ways: PG `timestamptz` <-> ISO string (`new Date(ms).toISOString()`) <-> ms. Helpers in `packages/local/src/time.ts`.
+- **IDs are app-side UUIDs** (`crypto.randomUUID()`, TEXT, no SQL default). Rationale: the same UUID string can be created offline and later inserted into PostgreSQL unchanged, so rows keep one identity on both sides with no id-remapping table. Raw-SQL inserts must supply `id` explicitly.
+- **Money stays whole-rupiah INTEGER** (SQLite INTEGER is 64-bit, same range as PG `bigint`).
+- **PG enums become TEXT + CHECK** (`accounts_type_allowed`, `categories_kind_allowed`, `transactions_kind_allowed`); `sqlite-core`'s `enum` option is type-only and emits no DDL.
+- Checks, indexes (`tx_time_idx`, `tx_account_idx`), and FKs (`restrict` everywhere except `transaction_items` -> `transactions` `cascade`) are identical to PostgreSQL. SQLite only enforces FKs with `PRAGMA foreign_keys = ON` per connection — `connect()` in `packages/local/src/migrate.ts` sets it; every new connection must do the same.
+- **New local rows are `dirty = 1` by convention** (client-side `$defaultFn`; the sync engine sets it on write). The SQL `DEFAULT 0` only fires for raw inserts and for the 0001 backfill, which then marks all pre-sync rows `dirty = 1` (they still need their first push) and maps legacy category names to slugs (`'custom-' || id` fallback), keeping `transactions.updated_at` history intact.
+
+Seed: same 13 categories as above, keyed by slug (`onConflictDoNothing(slug)`), so re-runs and upgrades only fill gaps — the two `Lainnya` rows share a display name but have distinct slugs (`expense-other`, `income-other`).
