@@ -7,6 +7,7 @@ import {
 } from "@/components/TransactionForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "../components/PageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isUnauthorized } from "../lib/datasource";
 import { useDataSource } from "../lib/datasourceContext";
@@ -98,7 +99,9 @@ export default function Record() {
       tabIndex={-1}
       className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5"
     >
-      <h1 className="font-display text-xl font-bold">{strings.recordTitle}</h1>
+      <PageHeader>
+        <h1 className="font-display text-xl font-bold">{strings.recordTitle}</h1>
+      </PageHeader>
 
       {summary.isPending || categories.isPending ? (
         <div

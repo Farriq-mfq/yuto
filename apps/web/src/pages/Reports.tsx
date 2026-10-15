@@ -6,6 +6,7 @@ import { ChevronRightIcon, ReceiptIcon } from "@/icons";
 import { ReportCharts } from "@/components/ReportCharts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "../components/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -101,9 +102,9 @@ export default function Reports() {
     <main
       id="konten-utama"
       tabIndex={-1}
-      className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6"
+      className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5"
     >
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-3">
+      <PageHeader className="flex flex-wrap items-center justify-between gap-x-3 gap-y-3">
         <h1 className="font-display text-xl font-bold">{strings.reportsTitle}</h1>
         <Input
           type="month"
@@ -114,7 +115,7 @@ export default function Reports() {
           }}
           className="min-h-[44px] w-[170px]"
         />
-      </div>
+      </PageHeader>
 
       <Tabs
         value={kind}

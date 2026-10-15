@@ -38,6 +38,7 @@ import {
 import { type MonthTransaction, type TxKind } from "../lib/datasource";
 import { useDataSource } from "../lib/datasourceContext";
 import { useTheme, type ThemePreference } from "../lib/theme";
+import { PageHeader } from "../components/PageHeader";
 import { strings } from "../strings";
 
 type Filter = "all" | TxKind;
@@ -213,7 +214,7 @@ export default function Home() {
       tabIndex={-1}
       className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5"
     >
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-3">
+      <PageHeader className="flex flex-wrap items-center justify-between gap-x-3 gap-y-3">
         <div className="flex min-w-0 items-center gap-2">
           <img
             src={yutoIcon64}
@@ -272,7 +273,7 @@ export default function Home() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </div>
+      </PageHeader>
 
       {pending ? (
         <div

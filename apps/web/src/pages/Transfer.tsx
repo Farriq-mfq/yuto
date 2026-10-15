@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "../components/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -155,9 +156,11 @@ export default function Transfer() {
       >
         ← {strings.backToWallet}
       </Link>
-      <h1 className="mt-2 font-display text-xl font-bold">
-        {strings.transferTitle}
-      </h1>
+      <PageHeader>
+        <h1 className="mt-2 font-display text-xl font-bold">
+          {strings.transferTitle}
+        </h1>
+      </PageHeader>
 
       {summary.isPending ? (
         <div
