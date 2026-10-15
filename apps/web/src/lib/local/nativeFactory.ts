@@ -65,6 +65,18 @@ async function openNativeDataSource(): Promise<LocalDataSource> {
   if (already.result === true) {
     conn = await sqlite.retrieveConnection(DATABASE_NAME, false);
   } else {
+    // why: setelah WebView reload (mis. guard pasca renderer-crash),
+    // dict koneksi JS-side kosong (`isConnection` false) sementara koneksi
+    // native masih terdaftar → `createConnection` melempar "already
+    // exists" lalu `retrieveConnection` gagal "does not exist" (error
+    // yang mematikan aplikasi ke layar tanpa tab). Tutup koneksi basi
+    // dulu (abaikan bila memang tak ada), lalu buat baru — deterministik
+    // di semua jalur.
+    try {
+      await sqlite.closeConnection(DATABASE_NAME, false);
+    } catch {
+      // Abaikan: tak ada koneksi basi yang perlu ditutup.
+    }
     try {
       conn = await sqlite.createConnection(
         DATABASE_NAME,

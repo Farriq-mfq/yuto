@@ -11,6 +11,7 @@ import {
 } from "drizzle-orm";
 import type { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
 import * as localSchema from "@yuto/local/schema";
+import { newUuid } from "@yuto/local/uuid";
 import {
   JakartaTimeError,
   categoryPercent,
@@ -30,6 +31,10 @@ import type {
   UpdateAccountInput,
   UpdateTransactionInput,
 } from "../datasource";
+// why: impor statis (bukan dinamis): nativeFactory SUDAH mengimpor modul
+// ini secara statis, sehingga dynamic import di sini tak pernah memecah
+// chunk (INEFFECTIVE_DYNAMIC_IMPORT) — sekalian hilangkan warning build.
+import { NATIVE_SEED_CATEGORIES } from "./nativeSeedData";
 
 const {
   accounts,
@@ -468,7 +473,7 @@ export class LocalDataSource implements DataSource {
     }
     const now = Date.now();
     await this.db.insert(accounts).values({
-      id: crypto.randomUUID(),
+      id: newUuid(),
       name,
       institution,
       type: input.type,
@@ -572,7 +577,7 @@ export class LocalDataSource implements DataSource {
       throw invalid("Jumlah harga item harus sama dengan nominal transaksi.");
     }
     const now = Date.now();
-    const txId = crypto.randomUUID();
+    const txId = newUuid();
     // why: callback async + statement di-await (bukan .run() sync) agar jalan
     // di driver async sqlite-proxy/Capacitor. Di bun:sqlite (dipakai test)
     // statement tetap dieksekusi berurutan; atomisitas rollback penuh hanya
@@ -604,7 +609,7 @@ export class LocalDataSource implements DataSource {
         await tx
           .insert(transactionItems)
           .values({
-            id: crypto.randomUUID(),
+            id: newUuid(),
             transactionId: txId,
             name: item.name,
             quantity: item.quantity,
@@ -693,7 +698,7 @@ export class LocalDataSource implements DataSource {
           await tx
             .insert(transactionItems)
             .values({
-              id: crypto.randomUUID(),
+              id: newUuid(),
               transactionId: id,
               name: item.name,
               quantity: item.quantity,
@@ -747,7 +752,7 @@ export class LocalDataSource implements DataSource {
     const now = Date.now();
     await this.db.transaction(async (tx) => {
       await tx.insert(transfers).values({
-        id: crypto.randomUUID(),
+        id: newUuid(),
         fromAccountId: input.fromAccountId,
         toAccountId: input.toAccountId,
         amount,
@@ -1211,7 +1216,6 @@ export class LocalDataSource implements DataSource {
   }
 
   async wipeUserData(): Promise<void> {
-    const { NATIVE_SEED_CATEGORIES } = await import("./nativeSeedData");
     const now = Date.now();
     await this.db.transaction(async (tx) => {
       await tx.delete(transactionItems);
@@ -1221,7 +1225,7 @@ export class LocalDataSource implements DataSource {
       await tx.delete(categories);
       for (const cat of NATIVE_SEED_CATEGORIES) {
         await tx.insert(categories).values({
-          id: crypto.randomUUID(),
+          id: newUuid(),
           slug: cat.slug,
           name: cat.name,
           kind: cat.kind,
