@@ -109,5 +109,33 @@ Two fixed modes, no auto-detection surprises:
 - [ ] Test: off = nol request jaringan; on + URL valid + online = sync jalan; URL diganti = pairing ulang.
 - Done when: web tetap online-penuh tanpa toggle, dan HP berpindah offline-murni ↔ tersinkron hanya lewat switch + URL yang valid.
 
+## Phase 13: iPhone app (xtool)
+Target: IPA Yuto terinstal di iPhone fisik, offline-first seperti Android.
+Pakai xtool (https://github.com/xtool-org/xtool, pengganti Xcode lintas
+platform) — build + sign + install dari Linux/Windows, tanpa Mac.
+Syarat owner: akun Apple Developer (berbayar untuk distribusi; gratis =
+signing 7 hari) + kredensial di `xtool auth`, tidak pernah di-commit.
+- [ ] Spike: `cap add ios` + `cap sync`, lalu coba build via xtool.
+  Putuskan: langsung bisa (output Capacitor = project Xcode + CocoaPods),
+  atau perlu wrapper SwiftPM tipis (WKWebView). Hasil spike menentukan
+  sisa phase; catat di `docs/TRD.md`.
+- [ ] Adaptasi iOS: Face ID (`NSFaceIDUsageDescription`), token sync di
+  Keychain (plugin secure-storage sudah lintas platform), DB dieksklusi
+  dari iCloud backup (setara `allowBackup=false`), ATS (HTTPS only —
+  sudah ditegakkan validasi URL), ikon + launch screen iOS.
+- [ ] Signing: profil + sertifikat via `xtool auth`/`ds`; rahasia hanya di
+  GitHub Secrets / mesin owner, tak pernah di-commit (preseden sama
+  seperti keystore Android di Phase 10).
+- [ ] CI: workflow build IPA (unsigned/lokal); signed IPA hanya dari tag,
+  owner-only (seperti APK: verifikasi penuh butuh secret + device).
+- [ ] Real-device test: install via `xtool install`, buat data, kill +
+  reopen, airplane mode, export/import, update menimpa versi lama, relock
+  biometrik, pairing sync ke server (matriks yang sama seperti Android).
+- [ ] Docs: README (cara install di iPhone), TRD (keputusan xtool +
+  batasan iOS).
+- Done when: IPA terinstal di iPhone fisik, fully offline (kecuali tile
+  peta), terkunci biometrik, data bertahan antar update, dan sync dua
+  arah dengan server jalan seperti di Android.
+
 ## Deferred on purpose
-Budgets, goals, bank sync, receipt scanning, multi-currency, shared wallets, caching balances, prebuilt images on a registry, built-in TLS, multi-instance scaling, offline write queue and background sync, custom in-app install banner, iOS native app (PWA covers iOS), background sync on the phone, conflict-resolution screen, QR pairing.
+Budgets, goals, bank sync, receipt scanning, multi-currency, shared wallets, caching balances, prebuilt images on a registry, built-in TLS, multi-instance scaling, offline write queue and background sync, custom in-app install banner, background sync on the phone, conflict-resolution screen, QR pairing.
