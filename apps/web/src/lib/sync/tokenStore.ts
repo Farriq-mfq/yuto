@@ -103,16 +103,24 @@ export class SecureTokenStore extends LocalTokenStore {
   static pluginLoader: (() => Promise<SecurePlugin>) | null = null;
 
   private async plugin(): Promise<SecurePlugin | null> {
-    try {
-      if (SecureTokenStore.pluginLoader) {
+    // Seam test: bila diisi test, pakai plugin palsu (lihat pluginLoader).
+    if (SecureTokenStore.pluginLoader) {
+      try {
         return await SecureTokenStore.pluginLoader();
+      } catch {
+        return null;
       }
-      const mod = await import("@aparajita/capacitor-secure-storage");
-      return mod.SecureStorage as unknown as SecurePlugin;
-    } catch (error) {
-      console.warn(`[yuto] secure storage unavailable, token in plain KV: ${String(error)}`);
-      return null;
     }
+    // why: jalur plugin secure-storage native DINONAKTIFKAN sementara
+    // (fallback localStorage, sama seperti web). Terbukti di perangkat:
+    // memuat/membuat instance plugin (@aparajita SecureStorageNative di
+    // atas proxy) me-wedge event-loop renderer (tap mati total, tanpa
+    // error) di WebView 154 kedua HP uji — root cause di sisi plugin
+    // belum ketemu. Token = bearer acak di localStorage (gap yang sama
+    // seperti web; DB tetap terenkripsi + app lock tetap jalan).
+    // TODO: aktifkan lagi setelah root cause plugin jelas; kandidat:
+    // panggil internal* mentah tanpa kelas SecureStorageNative.
+    return null;
   }
 
   override async loadToken(): Promise<string | null> {
