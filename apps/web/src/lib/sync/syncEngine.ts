@@ -6,9 +6,14 @@ import type {
   PulledTransfer,
 } from "../local/localDataSource";
 import { normalizeServerUrl } from "./serverUrl";
+import { SYNC_DEBOUNCE_MS } from "./syncStatus";
 import { strings } from "../../strings";
 import type { TokenStore } from "./tokenStore";
-import { SyncError, type PushPayload, type SyncTransport } from "./syncTransport";
+import {
+  SyncError,
+  type PushPayload,
+  type SyncTransport,
+} from "./syncTransport";
 
 // Orkestrasi protokol sync (Phase 11 part 3). Engine murni: menerima
 // LocalDataSource konkret + SyncTransport injectable + TokenStore — tanpa
@@ -36,9 +41,6 @@ export const PULL_LIMIT = 500;
 
 /** Pengaman loop halaman pull (protokol tak punya flag hasMore). */
 export const MAX_PULL_PAGES = 50;
-
-/** Jeda debounce sync otomatis pasca-tulis (lihat syncStatus.ts). */
-export const SYNC_DEBOUNCE_MS = 3000;
 
 export interface SyncDeps {
   ds: LocalDataSource;
@@ -169,6 +171,7 @@ export async function pushLocalChanges(
   ds: LocalDataSource,
   transport: SyncTransport,
   conn: SyncConnection,
+  signal?: AbortSignal,
 ): Promise<PushOutcome> {
   const [dirtyAccounts, dirtyTx, dirtyTransfers] = await Promise.all([
     ds.getDirtyAccounts(),
@@ -240,7 +243,7 @@ export async function pushLocalChanges(
     })),
   };
 
-  const result = await transport.push(conn.baseUrl, conn.token, body);
+  const result = await transport.push(conn.baseUrl, conn.token, body, signal);
   const rejectedIds = new Set(result.rejected.map((row) => row.id));
 
   const rejected: SyncRejectedEntry[] = [...skippedNoCategory];
@@ -325,7 +328,8 @@ function normalizeTransfer(raw: unknown): PulledTransfer {
     fromAccountId: asNonEmpty(rec.fromAccountId),
     toAccountId: asNonEmpty(rec.toAccountId),
     amount: asNumber(rec.amount),
-    note: rec.note === null || rec.note === undefined ? null : asString(rec.note),
+    note:
+      rec.note === null || rec.note === undefined ? null : asString(rec.note),
     occurredAt: toMs(rec.occurredAt),
     createdAt: toMs(rec.createdAt),
     deletedAt: toMsOrNull(rec.deletedAt),
@@ -341,6 +345,7 @@ export async function pullServerChanges(
   transport: SyncTransport,
   conn: SyncConnection,
   fromCursor: number,
+  signal?: AbortSignal,
 ): Promise<PullOutcome> {
   let cursor = fromCursor;
   const total: PullOutcome = {
@@ -352,7 +357,13 @@ export async function pullServerChanges(
   };
   for (let page = 0; page < MAX_PULL_PAGES; page++) {
     const before = cursor;
-    const res = await transport.pull(conn.baseUrl, conn.token, cursor, PULL_LIMIT);
+    const res = await transport.pull(
+      conn.baseUrl,
+      conn.token,
+      cursor,
+      PULL_LIMIT,
+      signal,
+    );
     const serverCats = (res.categories as unknown[]).map(normalizeCategory);
     await ds.upsertPulledCategories(serverCats);
     const catById = new Map(serverCats.map((cat) => [cat.id, cat.slug]));
@@ -364,55 +375,59 @@ export async function pullServerChanges(
     const transfers = (res.transfers as unknown[]).map(normalizeTransfer);
     await ds.upsertPulledTransfers(transfers);
 
-    const transactions: PulledTransaction[] = (res.transactions as unknown[]).map(
-      (raw) => {
-        const rec = asRecord(raw);
-        const serverCategoryId = asNonEmpty(rec.categoryId);
-        const slug = catById.get(serverCategoryId);
-        const localCategoryId = slug ? slugMap.get(slug) : undefined;
-        if (!slug || !localCategoryId) throw badServerData();
-        const itemsRaw = Array.isArray(rec.items) ? rec.items : [];
-        return {
-          id: asNonEmpty(rec.id),
-          accountId: asNonEmpty(rec.accountId),
-          categoryId: localCategoryId,
-          kind: toKind(rec.kind),
-          title: asNonEmpty(rec.title),
-          amount: asNumber(rec.amount),
-          occurredAt: toMs(rec.occurredAt),
-          note: rec.note === null || rec.note === undefined ? null : asString(rec.note),
-          locationName:
-            rec.locationName === null || rec.locationName === undefined
-              ? null
-              : asString(rec.locationName),
-          address:
-            rec.address === null || rec.address === undefined
-              ? null
-              : asString(rec.address),
-          latitude:
-            rec.latitude === null || rec.latitude === undefined
-              ? null
-              : asNumber(rec.latitude),
-          longitude:
-            rec.longitude === null || rec.longitude === undefined
-              ? null
-              : asNumber(rec.longitude),
-          createdAt: toMs(rec.createdAt),
-          updatedAt: toMs(rec.updatedAt),
-          deletedAt: toMsOrNull(rec.deletedAt),
-          items: itemsRaw.map((itemRaw) => {
-            const item = asRecord(itemRaw);
-            return {
-              id: asNonEmpty(item.id),
-              name: asNonEmpty(item.name),
-              quantity: asNumber(item.quantity),
-              unitPrice: asNumber(item.unitPrice),
-              updatedAt: item.updatedAt === undefined ? Date.now() : toMs(item.updatedAt),
-            };
-          }),
-        };
-      },
-    );
+    const transactions: PulledTransaction[] = (
+      res.transactions as unknown[]
+    ).map((raw) => {
+      const rec = asRecord(raw);
+      const serverCategoryId = asNonEmpty(rec.categoryId);
+      const slug = catById.get(serverCategoryId);
+      const localCategoryId = slug ? slugMap.get(slug) : undefined;
+      if (!slug || !localCategoryId) throw badServerData();
+      const itemsRaw = Array.isArray(rec.items) ? rec.items : [];
+      return {
+        id: asNonEmpty(rec.id),
+        accountId: asNonEmpty(rec.accountId),
+        categoryId: localCategoryId,
+        kind: toKind(rec.kind),
+        title: asNonEmpty(rec.title),
+        amount: asNumber(rec.amount),
+        occurredAt: toMs(rec.occurredAt),
+        note:
+          rec.note === null || rec.note === undefined
+            ? null
+            : asString(rec.note),
+        locationName:
+          rec.locationName === null || rec.locationName === undefined
+            ? null
+            : asString(rec.locationName),
+        address:
+          rec.address === null || rec.address === undefined
+            ? null
+            : asString(rec.address),
+        latitude:
+          rec.latitude === null || rec.latitude === undefined
+            ? null
+            : asNumber(rec.latitude),
+        longitude:
+          rec.longitude === null || rec.longitude === undefined
+            ? null
+            : asNumber(rec.longitude),
+        createdAt: toMs(rec.createdAt),
+        updatedAt: toMs(rec.updatedAt),
+        deletedAt: toMsOrNull(rec.deletedAt),
+        items: itemsRaw.map((itemRaw) => {
+          const item = asRecord(itemRaw);
+          return {
+            id: asNonEmpty(item.id),
+            name: asNonEmpty(item.name),
+            quantity: asNumber(item.quantity),
+            unitPrice: asNumber(item.unitPrice),
+            updatedAt:
+              item.updatedAt === undefined ? Date.now() : toMs(item.updatedAt),
+          };
+        }),
+      };
+    });
     await ds.upsertPulledTransactions(transactions);
 
     total.accounts += accounts.length;
@@ -428,11 +443,20 @@ export async function pullServerChanges(
 }
 
 /** Satu siklus penuh: push perubahan lokal, lalu pull dari cursor tersimpan. */
-export async function syncNow(deps: SyncDeps): Promise<SyncResult> {
+export async function syncNow(
+  deps: SyncDeps,
+  signal?: AbortSignal,
+): Promise<SyncResult> {
   const conn = await requireConnection(deps.tokens);
-  const pushed = await pushLocalChanges(deps.ds, deps.transport, conn);
+  const pushed = await pushLocalChanges(deps.ds, deps.transport, conn, signal);
   const { cursor } = await deps.ds.getSyncState();
-  const pulled = await pullServerChanges(deps.ds, deps.transport, conn, cursor);
+  const pulled = await pullServerChanges(
+    deps.ds,
+    deps.transport,
+    conn,
+    cursor,
+    signal,
+  );
   return { pushed, pulled };
 }
 
@@ -454,7 +478,10 @@ function hasLiveRows(page: {
   const live = (rows: unknown[]) =>
     rows.some((raw) => {
       try {
-        return asRecord(raw).deletedAt === null || asRecord(raw).deletedAt === undefined;
+        return (
+          asRecord(raw).deletedAt === null ||
+          asRecord(raw).deletedAt === undefined
+        );
       } catch {
         return false;
       }
@@ -469,14 +496,17 @@ function hasLiveRows(page: {
 export async function pairAndDetect(
   deps: SyncDeps,
   input: { serverUrl: string; password: string; deviceName: string },
+  signal?: AbortSignal,
 ): Promise<PairingSituation> {
   const baseUrl = normalizeServerUrl(input.serverUrl);
   const deviceName = input.deviceName.trim();
-  if (deviceName.length === 0) throw new SyncError(strings.syncDeviceNameRequired);
+  if (deviceName.length === 0)
+    throw new SyncError(strings.syncDeviceNameRequired);
   const { token, deviceId } = await deps.transport.pair(
     baseUrl,
     input.password,
     deviceName,
+    signal,
   );
   await deps.tokens.saveToken(token);
   await deps.tokens.saveServerUrl(baseUrl);
@@ -487,7 +517,7 @@ export async function pairAndDetect(
   const counts = await deps.ds.countLiveUserData();
   const localHasData =
     counts.accounts + counts.transactions + counts.transfers > 0;
-  const peek = await deps.transport.pull(baseUrl, token, 0, 1);
+  const peek = await deps.transport.pull(baseUrl, token, 0, 1, signal);
   const serverHasData = hasLiveRows({
     accounts: peek.accounts as unknown[],
     transactions: peek.transactions as unknown[],
@@ -504,16 +534,35 @@ export async function pairAndDetect(
 }
 
 /** Mode "upload HP ini": sync biasa (push lalu pull). */
-export async function completePairingUpload(deps: SyncDeps): Promise<SyncResult> {
-  return syncNow(deps);
+export async function completePairingUpload(
+  deps: SyncDeps,
+  signal?: AbortSignal,
+): Promise<SyncResult> {
+  return syncNow(deps, signal);
+}
+
+/**
+ * Kirim saja (push-only, tanpa pull): untuk tombol manual "Kirim data HP
+ * ini" pada state tertaut. Pilihan upload saat pairing hanya muncul sekali
+ * (needsChoice); ini memberi jalan kirim ulang kapan pun untuk testing.
+ */
+export async function pushOnly(
+  deps: SyncDeps,
+  signal?: AbortSignal,
+): Promise<PushOutcome> {
+  const conn = await requireConnection(deps.tokens);
+  return pushLocalChanges(deps.ds, deps.transport, conn, signal);
 }
 
 /** Mode "timpa dari server": wipe lokal (kecuali seed) + pull penuh. */
-export async function completePairingReplace(deps: SyncDeps): Promise<PullOutcome> {
+export async function completePairingReplace(
+  deps: SyncDeps,
+  signal?: AbortSignal,
+): Promise<PullOutcome> {
   const conn = await requireConnection(deps.tokens);
   await deps.ds.wipeUserData();
   await deps.ds.setSyncCursor(0);
-  return pullServerChanges(deps.ds, deps.transport, conn, 0);
+  return pullServerChanges(deps.ds, deps.transport, conn, 0, signal);
 }
 
 /** Mode "batal": hapus token + reset cursor/device. Data lokal tetap. */
@@ -530,17 +579,50 @@ export async function unpair(deps: SyncDeps): Promise<void> {
   await cancelPairing(deps);
 }
 
+export const SYNC_TIMEOUT_MS = 30_000;
+const SYNC_LONG_TIMEOUT_MS = 120_000;
+export function withTimeout<T>(
+  p: Promise<T>,
+  ms = SYNC_TIMEOUT_MS,
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(
+      () =>
+        reject(new Error("Waktu habis. Periksa koneksi dan alamat server.")),
+      ms,
+    );
+    p.then(
+      (v) => {
+        clearTimeout(t);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(t);
+        reject(e);
+      },
+    );
+  });
+}
+
 /** Klien sync terikat untuk UI (dibuat sekali per database). */
 export function createSyncClient(deps: SyncDeps) {
   return {
-    syncNow: () => syncNow(deps),
-    pairAndDetect: (input: {
-      serverUrl: string;
-      password: string;
-      deviceName: string;
-    }) => pairAndDetect(deps, input),
-    completePairingUpload: () => completePairingUpload(deps),
-    completePairingReplace: () => completePairingReplace(deps),
+    syncNow: (signal?: AbortSignal) =>
+      withTimeout(syncNow(deps, signal), SYNC_LONG_TIMEOUT_MS),
+    pairAndDetect: (
+      input: {
+        serverUrl: string;
+        password: string;
+        deviceName: string;
+      },
+      signal?: AbortSignal,
+    ) => withTimeout(pairAndDetect(deps, input, signal)),
+    completePairingUpload: (signal?: AbortSignal) =>
+      withTimeout(completePairingUpload(deps, signal), SYNC_LONG_TIMEOUT_MS),
+    completePairingReplace: (signal?: AbortSignal) =>
+      withTimeout(completePairingReplace(deps, signal), SYNC_LONG_TIMEOUT_MS),
+    pushOnly: (signal?: AbortSignal) =>
+      withTimeout(pushOnly(deps, signal), SYNC_LONG_TIMEOUT_MS),
     cancelPairing: () => cancelPairing(deps),
     unpair: () => unpair(deps),
     getConnection: () => requireConnection(deps.tokens),

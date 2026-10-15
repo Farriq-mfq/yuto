@@ -1,9 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import type { FormEvent } from "react";
-import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -14,16 +15,25 @@ import {
   TrashIcon,
   WarningIcon,
 } from "@/icons";
-import { isUnauthorized } from "../lib/datasource";
-import { api, errorStatus } from "../lib/api";
+import { useQuery } from "@tanstack/react-query";
+import type { FormEvent } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Navigate } from "react-router-dom";
 import type { DeviceInfo } from "../../../api/src/modules/sync/service";
+import { api, errorStatus } from "../lib/api";
+import { isUnauthorized } from "../lib/datasource";
+import { useSyncClient } from "../lib/sync/syncContext";
+import { PageHeader } from "../components/PageHeader";
 import type {
   PairingSituation,
   SyncClient,
   SyncResult,
 } from "../lib/sync/syncEngine";
-import { useSyncClient } from "../lib/sync/syncContext";
-import { useSyncStatus, syncStatus } from "../lib/sync/syncStatus";
+import {
+  runSyncGuarded,
+  syncStatus,
+  useSyncStatus,
+} from "../lib/sync/syncStatus";
 import { strings } from "../strings";
 
 export default function Sync() {
@@ -44,7 +54,7 @@ function formatSyncTime(iso: string): string {
 
 // ------------------------------------------------------------ native
 
-function NativeSyncView({ client }: { client: SyncClient }) {
+export function NativeSyncView({ client }: { client: SyncClient }) {
   const status = useSyncStatus();
   const [paired, setPaired] = useState<{
     serverUrl: string;
@@ -59,16 +69,41 @@ function NativeSyncView({ client }: { client: SyncClient }) {
   const [lastResult, setLastResult] = useState<SyncResult | null>(null);
   const [confirmUnpair, setConfirmUnpair] = useState(false);
   const [confirmReplace, setConfirmReplace] = useState(false);
+  // why: jalan keluar bila request macet (server diam melebihi timeout
+  // atau user berubah pikiran) — abort membatalkan fetch via signal,
+  // `busy` kembali false di finally, tombol aktif lagi.
+  const abortRef = useRef<AbortController | null>(null);
+
+  function beginOp(): AbortSignal {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    return controller.signal;
+  }
+
+  function endOp(signal: AbortSignal): void {
+    if (abortRef.current?.signal === signal) abortRef.current = null;
+  }
+
+  function onCancelOp(): void {
+    abortRef.current?.abort();
+  }
 
   useEffect(() => {
     let cancelled = false;
-    void client.getPairingInfo().then((info) => {
-      if (!cancelled && info) {
-        setPaired(info);
-        setServerUrl(info.serverUrl);
-        setDeviceName(info.deviceName);
-      }
-    });
+    // why: rejection diabaikan diam-diam — info pairing hanya pengisi
+    // form; kegagalan baca store lokal tak boleh memunculkan
+    // unhandledrejection (noise logcat) maupun mengubah UI.
+    void client
+      .getPairingInfo()
+      .then((info) => {
+        if (!cancelled && info) {
+          setPaired(info);
+          setServerUrl(info.serverUrl);
+          setDeviceName(info.deviceName);
+        }
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -82,17 +117,12 @@ function NativeSyncView({ client }: { client: SyncClient }) {
     if (busy) return;
     setBusy(true);
     setMessage(null);
-    syncStatus.setSyncing(true);
+    const signal = beginOp();
     try {
-      const result = await client.syncNow();
-      setLastResult(result);
-      syncStatus.recordSuccess();
-    } catch (error) {
-      const text = error instanceof Error ? error.message : strings.syncFailed;
-      setMessage(text);
-      syncStatus.recordError(text);
+      const result = await runSyncGuarded(() => client.syncNow(signal));
+      if (result) setLastResult(result);
     } finally {
-      syncStatus.setSyncing(false);
+      endOp(signal);
       setBusy(false);
     }
   }
@@ -103,28 +133,40 @@ function NativeSyncView({ client }: { client: SyncClient }) {
     setBusy(true);
     setMessage(null);
     setLastResult(null);
+    const signal = beginOp();
     try {
-      const sit = await client.pairAndDetect({ serverUrl, password, deviceName });
+      const sit = await client.pairAndDetect(
+        {
+          serverUrl,
+          password,
+          deviceName,
+        },
+        signal,
+      );
       setPassword("");
       const info = await client.getPairingInfo();
       if (info) setPaired(info);
       if (sit.needsChoice) {
         setSituation(sit);
       } else if (sit.serverHasData && !sit.localHasData) {
-        await client.completePairingReplace();
+        await client.completePairingReplace(signal);
         syncStatus.recordSuccess();
       } else {
-        const result = await client.completePairingUpload();
+        const result = await client.completePairingUpload(signal);
         setLastResult(result);
         syncStatus.recordSuccess();
       }
     } catch (error) {
       fail(error);
     } finally {
+      endOp(signal);
       setBusy(false);
-      void client.getPairingInfo().then((info) => {
-        if (info) setPaired(info);
-      });
+      void client
+        .getPairingInfo()
+        .then((info) => {
+          if (info) setPaired(info);
+        })
+        .catch(() => {});
     }
   }
 
@@ -132,14 +174,45 @@ function NativeSyncView({ client }: { client: SyncClient }) {
     if (busy) return;
     setBusy(true);
     setMessage(null);
+    const signal = beginOp();
     try {
-      const result = await client.completePairingUpload();
+      const result = await client.completePairingUpload(signal);
       setLastResult(result);
       setSituation(null);
       syncStatus.recordSuccess();
     } catch (error) {
       fail(error);
     } finally {
+      endOp(signal);
+      setBusy(false);
+    }
+  }
+
+  // why: kirim ulang manual kapan pun (push-only, tanpa pull) — pilihan
+  // "Kirim data HP ini" saat pairing hanya muncul sekali (needsChoice).
+  // Untuk testing: baris kotor didorong, hasil (termasuk rejected) tampil
+  // di kartu yang sama seperti sync biasa.
+  async function onPushOnly() {
+    if (busy) return;
+    setBusy(true);
+    setMessage(null);
+    const signal = beginOp();
+    try {
+      const pushed = await runSyncGuarded(() => client.pushOnly(signal));
+      if (pushed) {
+        setLastResult({
+          pushed,
+          pulled: {
+            accounts: 0,
+            transactions: 0,
+            transfers: 0,
+            categories: 0,
+            cursor: 0,
+          },
+        });
+      }
+    } finally {
+      endOp(signal);
       setBusy(false);
     }
   }
@@ -153,13 +226,15 @@ function NativeSyncView({ client }: { client: SyncClient }) {
     setConfirmReplace(false);
     setBusy(true);
     setMessage(null);
+    const signal = beginOp();
     try {
-      await client.completePairingReplace();
+      await client.completePairingReplace(signal);
       setSituation(null);
       syncStatus.recordSuccess();
     } catch (error) {
       fail(error);
     } finally {
+      endOp(signal);
       setBusy(false);
     }
   }
@@ -207,33 +282,67 @@ function NativeSyncView({ client }: { client: SyncClient }) {
       tabIndex={-1}
       className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5"
     >
-      <h1 className="font-display text-xl font-bold">{strings.syncTitle}</h1>
+      <PageHeader>
+        <h1 className="font-display text-xl font-bold">{strings.syncTitle}</h1>
+      </PageHeader>
 
       <Card className="mt-5" aria-label={strings.syncTitle}>
         <CardContent>
           <p className="text-sm text-muted-foreground">{strings.syncLastAt}</p>
           <p className="mt-1 text-base font-bold" aria-live="polite">
-            {status.lastSyncAt ? formatSyncTime(status.lastSyncAt) : strings.syncNever}
+            {status.lastSyncAt
+              ? formatSyncTime(status.lastSyncAt)
+              : strings.syncNever}
           </p>
           {status.lastError ? (
-            <p role="alert" className="mt-2 flex items-start gap-2 text-sm font-medium text-destructive">
-              <ErrorIcon size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
+            <p
+              role="alert"
+              className="mt-2 flex items-start gap-2 text-sm font-medium text-destructive"
+            >
+              <ErrorIcon
+                size={18}
+                aria-hidden="true"
+                className="mt-0.5 shrink-0"
+              />
               {status.lastError}
             </p>
           ) : null}
           {paired ? (
-            <Button
-              type="button"
-              onClick={runSync}
-              disabled={busy || status.syncing}
-              className="mt-4 min-h-[44px] w-full"
-            >
-              <RefreshIcon size={18} aria-hidden="true" />
-              {busy || status.syncing ? strings.syncing : strings.syncNow}
-            </Button>
+            <>
+              <Button
+                type="button"
+                onClick={runSync}
+                disabled={busy || status.syncing}
+                className="mt-4 min-h-[44px] w-full"
+              >
+                <RefreshIcon size={18} aria-hidden="true" />
+                {busy || status.syncing ? strings.syncing : strings.syncNow}
+              </Button>
+              {busy ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={onCancelOp}
+                  className="mt-2 min-h-[44px] w-full"
+                >
+                  {strings.cancel}
+                </Button>
+              ) : null}
+            </>
           ) : null}
         </CardContent>
       </Card>
+
+      {paired && !busy ? (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onPushOnly}
+          className="mt-4 min-h-[44px] w-full"
+        >
+          {strings.choiceUpload}
+        </Button>
+      ) : null}
 
       {message ? (
         <p role="alert" className="mt-3 text-sm font-medium text-destructive">
@@ -264,7 +373,9 @@ function NativeSyncView({ client }: { client: SyncClient }) {
               <InfoIcon size={18} aria-hidden="true" className="shrink-0" />
               {strings.syncConflictTitle}
             </p>
-            <p className="mt-1 text-sm text-muted-foreground">{strings.syncConflictHint}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {strings.syncConflictHint}
+            </p>
           </CardContent>
         </Card>
       ) : null}
@@ -276,10 +387,17 @@ function NativeSyncView({ client }: { client: SyncClient }) {
             <CardDescription>{strings.choiceHint}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            <Button type="button" onClick={onUpload} disabled={busy} className="min-h-[44px]">
+            <Button
+              type="button"
+              onClick={onUpload}
+              disabled={busy}
+              className="min-h-[44px]"
+            >
               {strings.choiceUpload}
             </Button>
-            <p className="-mt-1 text-xs text-muted-foreground">{strings.choiceUploadHint}</p>
+            <p className="-mt-1 text-xs text-muted-foreground">
+              {strings.choiceUploadHint}
+            </p>
             <Button
               type="button"
               variant={confirmReplace ? "destructive" : "outline"}
@@ -288,9 +406,13 @@ function NativeSyncView({ client }: { client: SyncClient }) {
               className="min-h-[44px]"
             >
               <TrashIcon size={18} aria-hidden="true" />
-              {confirmReplace ? strings.choiceReplaceConfirm : strings.choiceReplace}
+              {confirmReplace
+                ? strings.choiceReplaceConfirm
+                : strings.choiceReplace}
             </Button>
-            <p className="-mt-1 text-xs text-muted-foreground">{strings.choiceReplaceHint}</p>
+            <p className="-mt-1 text-xs text-muted-foreground">
+              {strings.choiceReplaceHint}
+            </p>
             <Button
               type="button"
               variant="ghost"
@@ -300,7 +422,19 @@ function NativeSyncView({ client }: { client: SyncClient }) {
             >
               {strings.choiceCancel}
             </Button>
-            <p className="-mt-1 text-xs text-muted-foreground">{strings.choiceCancelHint}</p>
+            {busy ? (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onCancelOp}
+                className="min-h-[44px]"
+              >
+                {strings.cancel}
+              </Button>
+            ) : null}
+            <p className="-mt-1 text-xs text-muted-foreground">
+              {strings.choiceCancelHint}
+            </p>
           </CardContent>
         </Card>
       ) : null}
@@ -308,14 +442,20 @@ function NativeSyncView({ client }: { client: SyncClient }) {
       {paired ? (
         <Card className="mt-4">
           <CardContent>
-            <p className="text-sm text-muted-foreground">{strings.syncPairedAs}</p>
+            <p className="text-sm text-muted-foreground">
+              {strings.syncPairedAs}
+            </p>
             <p className="mt-0.5 flex items-center gap-2 text-base font-bold">
               <SuccessIcon size={18} aria-hidden="true" className="shrink-0" />
               {paired.deviceName || strings.noNote}
             </p>
-            <p className="mt-2 text-sm text-muted-foreground">{strings.syncServerLabel}</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {strings.syncServerLabel}
+            </p>
             <p className="break-all font-mono text-sm">{paired.serverUrl}</p>
-            <p className="mt-2 text-xs text-muted-foreground">{strings.syncUnpairHint}</p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {strings.syncUnpairHint}
+            </p>
             <Button
               type="button"
               variant={confirmUnpair ? "destructive" : "outline"}
@@ -336,7 +476,9 @@ function NativeSyncView({ client }: { client: SyncClient }) {
           <CardContent>
             <form onSubmit={onPair} className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="sync-server-url">{strings.serverUrlLabel}</Label>
+                <Label htmlFor="sync-server-url">
+                  {strings.serverUrlLabel}
+                </Label>
                 <Input
                   id="sync-server-url"
                   name="serverUrl"
@@ -348,7 +490,9 @@ function NativeSyncView({ client }: { client: SyncClient }) {
                   onChange={(event) => setServerUrl(event.target.value)}
                   className="min-h-[44px] font-mono"
                 />
-                <p className="text-xs text-muted-foreground">{strings.serverUrlHint}</p>
+                <p className="text-xs text-muted-foreground">
+                  {strings.serverUrlHint}
+                </p>
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="sync-password">{strings.passwordLabel}</Label>
@@ -364,7 +508,9 @@ function NativeSyncView({ client }: { client: SyncClient }) {
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="sync-device-name">{strings.deviceNameLabel}</Label>
+                <Label htmlFor="sync-device-name">
+                  {strings.deviceNameLabel}
+                </Label>
                 <Input
                   id="sync-device-name"
                   name="deviceName"
@@ -379,11 +525,23 @@ function NativeSyncView({ client }: { client: SyncClient }) {
               </div>
               <Button
                 type="submit"
-                disabled={busy || serverUrl.length === 0 || password.length === 0}
+                disabled={
+                  busy || serverUrl.length === 0 || password.length === 0
+                }
                 className="min-h-[44px]"
               >
                 {busy ? strings.pairing : strings.pairButton}
               </Button>
+              {busy ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={onCancelOp}
+                  className="min-h-[44px]"
+                >
+                  {strings.cancel}
+                </Button>
+              ) : null}
             </form>
           </CardContent>
         </Card>
@@ -450,11 +608,17 @@ function WebSyncView() {
       tabIndex={-1}
       className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5"
     >
-      <h1 className="font-display text-xl font-bold">{strings.syncTitle}</h1>
-      <p className="mt-2 text-sm text-muted-foreground">{strings.webSyncNote}</p>
+      <PageHeader>
+        <h1 className="font-display text-xl font-bold">{strings.syncTitle}</h1>
+      </PageHeader>
+      <p className="mt-2 text-sm text-muted-foreground">
+        {strings.webSyncNote}
+      </p>
 
       <h2 className="mt-6 text-base font-bold">{strings.devicesTitle}</h2>
-      <p className="mt-1 text-sm text-muted-foreground">{strings.devicesHint}</p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {strings.devicesHint}
+      </p>
 
       {message ? (
         <p role="alert" className="mt-3 text-sm font-medium text-destructive">
@@ -470,22 +634,31 @@ function WebSyncView() {
         <Card className="mt-4">
           <CardContent className="items-center p-6 text-center">
             <p className="text-sm text-muted-foreground">{strings.loadError}</p>
-            <Button type="button" onClick={() => devices.refetch()} className="mt-3 min-h-[44px]">
+            <Button
+              type="button"
+              onClick={() => devices.refetch()}
+              className="mt-3 min-h-[44px]"
+            >
               {strings.retry}
             </Button>
           </CardContent>
         </Card>
       ) : devices.data.length === 0 ? (
-        <p className="mt-4 text-sm text-muted-foreground">{strings.devicesEmpty}</p>
+        <p className="mt-4 text-sm text-muted-foreground">
+          {strings.devicesEmpty}
+        </p>
       ) : (
         <div className="mt-4 flex flex-col gap-3">
           {devices.data.map((device) => (
             <Card key={device.id}>
               <CardContent className="flex items-center gap-3">
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-sm font-bold">{device.name}</span>
+                  <span className="truncate text-sm font-bold">
+                    {device.name}
+                  </span>
                   <span className="text-xs text-muted-foreground">
-                    {strings.deviceLastSeen}: {formatDeviceTime(device.lastSeenAt)}
+                    {strings.deviceLastSeen}:{" "}
+                    {formatDeviceTime(device.lastSeenAt)}
                   </span>
                   {device.revokedAt ? (
                     <span className="text-xs font-medium text-destructive">
@@ -496,7 +669,9 @@ function WebSyncView() {
                 {device.revokedAt ? null : (
                   <Button
                     type="button"
-                    variant={confirmId === device.id ? "destructive" : "outline"}
+                    variant={
+                      confirmId === device.id ? "destructive" : "outline"
+                    }
                     onClick={() => onRevoke(device.id)}
                     disabled={pendingId !== null}
                     className="min-h-[44px] shrink-0"
