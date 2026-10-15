@@ -151,7 +151,8 @@ export const strings = {
   accountCategoryPlaceholder: "Mis. Tabungan",
   openingBalanceLabel: "Saldo awal",
   showCategoryLabel: "Tampilkan kategori di kartu",
-  showCategoryHint: "Bila aktif, kategori akun tampil sebagai lencana di daftar.",
+  showCategoryHint:
+    "Bila aktif, kategori akun tampil sebagai lencana di daftar.",
   requiredField: "Wajib diisi.",
   newAccountTitle: "Akun baru",
   editAccountTitle: "Ubah akun",
@@ -160,8 +161,7 @@ export const strings = {
   accountNotFoundHint: "Mungkin sudah dihapus dari perangkat lain.",
   backToWallet: "Kembali ke Dompet",
   deleteAccountTitle: "Hapus akun?",
-  deleteAccountConfirm:
-    "Akun ini akan dihapus permanen. Lanjut?",
+  deleteAccountConfirm: "Akun ini akan dihapus permanen. Lanjut?",
   deleteAccountConflict:
     "Akun tak bisa dihapus karena memiliki transaksi/transfer.",
   transferTitle: "Transfer",
@@ -210,7 +210,9 @@ export const strings = {
   syncNever: "Belum pernah sinkron",
   syncLastAt: "Terakhir sinkron",
   syncFailed: "Sinkron gagal. Coba lagi.",
-  syncServerUnreachable: "Tidak dapat menghubungi server. Periksa alamat dan koneksi.",
+  syncCancelled: "Dibatalkan.",
+  syncServerUnreachable:
+    "Tidak dapat menghubungi server. Periksa alamat dan koneksi.",
   syncUnexpectedResponse: "Respons server tidak dikenali.",
   syncUnauthorized: "Akses ditolak. Tautkan ulang perangkat.",
   syncRateLimited: "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.",
@@ -221,24 +223,29 @@ export const strings = {
   syncPairedAs: "Tertaut sebagai",
   syncServerLabel: "Server",
   syncUnpair: "Lepas tautan",
-  syncUnpairHint: "Token di perangkat ini dibuang; data lokal tetap. Baris perangkat di server tetap ada — cabut lewat browser bila perlu.",
+  syncUnpairHint:
+    "Token di perangkat ini dibuang; data lokal tetap. Baris perangkat di server tetap ada — cabut lewat browser bila perlu.",
   syncUnpairConfirm: "Ketuk lagi untuk melepas",
   pairTitle: "Tautkan ke server",
-  pairHint: "Masukkan alamat server Yuto di rumah, kata sandi pemilik, dan nama perangkat ini.",
+  pairHint:
+    "Masukkan alamat server Yuto di rumah, kata sandi pemilik, dan nama perangkat ini.",
   serverUrlLabel: "Alamat server",
   serverUrlPlaceholder: "https://192.168.1.10:3000",
   serverUrlHint: "Wajib https://, kecuali http://localhost untuk percobaan.",
   deviceNameLabel: "Nama perangkat",
-  deviceNamePlaceholder: "Mis. HP Farriq",
+  deviceNamePlaceholder: "Mis. HP Redmi",
   pairButton: "Tautkan",
   pairing: "Menautkan…",
   syncUrlInvalid: "Alamat server tidak valid.",
-  syncUrlBlocked: "Demi keamanan token, hanya https:// atau http://localhost yang diizinkan.",
+  syncUrlBlocked:
+    "Demi keamanan token, hanya https:// atau http://localhost yang diizinkan.",
   syncUrlNoPath: "Isi root server saja (tanpa /api di belakang).",
   choiceTitle: "Kedua sisi punya data",
-  choiceHint: "Server dan perangkat ini sama-sama berisi data. Pilih salah satu:",
+  choiceHint:
+    "Server dan perangkat ini sama-sama berisi data. Pilih salah satu:",
   choiceUpload: "Kirim data HP ini",
-  choiceUploadHint: "Gabung: data perangkat dikirim, lalu dilengkapi dari server.",
+  choiceUploadHint:
+    "Gabung: data perangkat dikirim, lalu dilengkapi dari server.",
   choiceReplace: "Timpa dari server",
   choiceReplaceHint: "Hapus data perangkat ini lalu unduh penuh dari server.",
   choiceReplaceConfirm: "Ketuk lagi — data perangkat akan dihapus",
@@ -246,9 +253,11 @@ export const strings = {
   choiceCancelHint: "Hapus token; data kedua sisi tetap.",
   syncRejectedTitle: "Perlu perhatian",
   syncConflictTitle: "Hapus akun dibatalkan server",
-  syncConflictHint: "Hapus dulu transaksi/transfer yang memakai akun itu, lalu hapus akunnya lagi.",
+  syncConflictHint:
+    "Hapus dulu transaksi/transfer yang memakai akun itu, lalu hapus akunnya lagi.",
   devicesTitle: "Perangkat tertaut",
-  devicesHint: "Hanya pemilik lewat browser yang bisa melihat dan mencabut perangkat.",
+  devicesHint:
+    "Hanya pemilik lewat browser yang bisa melihat dan mencabut perangkat.",
   devicesEmpty: "Belum ada perangkat tertaut.",
   deviceLastSeen: "Terakhir aktif",
   deviceNeverSeen: "Belum pernah aktif",
@@ -256,7 +265,8 @@ export const strings = {
   revokeButton: "Cabut",
   revoking: "Mencabut…",
   revokeConfirm: "Ketuk lagi untuk mencabut",
-  webSyncNote: "Browser ini tersambung langsung ke server — tak perlu sinkronisasi.",
+  webSyncNote:
+    "Browser ini tersambung langsung ke server — tak perlu sinkronisasi.",
 } as const;
 
 export type Strings = typeof strings;
