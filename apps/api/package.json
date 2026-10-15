@@ -13,6 +13,7 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@elysiajs/cors": "^1.4.2",
     "@yuto/core": "workspace:*",
     "drizzle-orm": "^0.45.4",
     "elysia": "^1.3.0",
