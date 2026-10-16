@@ -20,7 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { isUnauthorized } from "../lib/datasource";
 import { useDataSource } from "../lib/datasourceContext";
 import { formatRupiah } from "../lib/format";
-import { useHideBalance } from "../lib/hideBalance";
+import { useHideBalance, useHiddenAccounts } from "../lib/hideBalance";
 import { type AccountType } from "../lib/datasource";
 import { strings } from "../strings";
 
@@ -46,6 +46,7 @@ const FALLBACK_ICONS = {
 export default function Wallet() {
   const dataSource = useDataSource();
   const [hidden, toggleHidden] = useHideBalance();
+  const { isHidden: isAccountHidden } = useHiddenAccounts();
   const summary = useQuery({
     queryKey: ["accounts", "summary"],
     queryFn: () => dataSource.getAccountsSummary(),
@@ -56,8 +57,10 @@ export default function Wallet() {
     return <Navigate to="/login" replace />;
   }
 
-  const display = (amount: number) =>
-    hidden ? strings.balanceHidden : formatRupiah(amount);
+  const display = (amount: number, accountId?: string) =>
+    hidden || (accountId !== undefined && isAccountHidden(accountId))
+      ? strings.balanceHidden
+      : formatRupiah(amount);
 
   return (
     <main
@@ -194,13 +197,13 @@ export default function Wallet() {
                   <Link
                     key={account.id}
                     to={`/wallet/${account.id}`}
-                    aria-label={account.name}
+                    aria-label={`${account.name}, ${display(account.balance, account.id)}`}
                     className="block min-h-[44px] rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <Card
                       className={cn(
                         "rounded-2xl",
-                        branded && "text-white ring-white/20",
+                        branded && "text-white",
                       )}
                       // why: warna kartu data brand (absolut, sama di light
                       // dan dark), bukan token desain. Gradien diturunkan
@@ -286,8 +289,8 @@ export default function Wallet() {
                             </Badge>
                           ) : null}
                         </div>
-                        <p className="text-xl font-bold tabular-nums">
-                          {display(account.balance)}
+                        <p className="text-right text-xl font-bold tabular-nums">
+                          {display(account.balance, account.id)}
                         </p>
                       </CardContent>
                     </Card>
