@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { SignedAmount } from "@/components/SignedAmount";
+import { useHideBalance } from "../lib/hideBalance";
 import { ChevronRightIcon, ReceiptIcon } from "@/icons";
 import { ReportCharts } from "@/components/ReportCharts";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,7 @@ export default function Reports() {
   });
   const [kind, setKind] = useState<TxKind>("expense");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [hidden] = useHideBalance();
 
   // why: id kategori yang dibuka adalah UI state; daftar transaksi milik
   // server tetap di cache query, tak disalin ke state.
@@ -164,8 +166,14 @@ export default function Reports() {
               </p>
               <p className="mt-1 text-3xl font-bold tabular-nums">
                 {/* why: net selalu bertanda agar tak mengandalkan warna. */}
-                {report.net < 0 ? "-" : "+"}
-                {formatRupiah(Math.abs(report.net))}
+                {hidden ? (
+                  strings.balanceHidden
+                ) : (
+                  <>
+                    {report.net < 0 ? "-" : "+"}
+                    {formatRupiah(Math.abs(report.net))}
+                  </>
+                )}
               </p>
               <div className="mt-3 flex gap-4 text-sm tabular-nums">
                 <p>
@@ -173,7 +181,7 @@ export default function Reports() {
                     {strings.monthIncome}:{" "}
                   </span>
                   <span className="font-semibold text-emerald-700 dark:text-emerald-400">
-                    +{formatRupiah(report.income)}
+                    {hidden ? strings.balanceHidden : `+${formatRupiah(report.income)}`}
                   </span>
                 </p>
                 <p>
@@ -181,7 +189,7 @@ export default function Reports() {
                     {strings.monthExpense}:{" "}
                   </span>
                   <span className="font-semibold text-destructive">
-                    -{formatRupiah(report.expense)}
+                    {hidden ? strings.balanceHidden : `-${formatRupiah(report.expense)}`}
                   </span>
                 </p>
               </div>
@@ -254,7 +262,7 @@ export default function Reports() {
                             </span>
                           </span>
                           <span className="mt-0.5 truncate text-xs tabular-nums text-muted-foreground">
-                            {changeLabel(category)}
+                            {hidden ? strings.balanceHidden : changeLabel(category)}
                           </span>
                         </span>
                         <span className="flex shrink-0 flex-col items-end">
@@ -262,6 +270,7 @@ export default function Reports() {
                             kind={kind}
                             amount={category.total}
                             className="text-sm font-semibold"
+                            hidden={hidden}
                           />
                           <span className="text-xs tabular-nums text-muted-foreground">
                             {formatPercent(category.percent)}
@@ -324,6 +333,7 @@ export default function Reports() {
                                   kind={row.kind}
                                   amount={row.amount}
                                   className="shrink-0 text-sm font-semibold"
+                                  hidden={hidden}
                                 />
                               </Link>
                             ))
