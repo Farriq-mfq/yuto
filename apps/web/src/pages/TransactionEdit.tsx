@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
 import {
   TransactionForm,
   type TxFormValues,
@@ -116,6 +117,7 @@ export default function TransactionEdit() {
     setPending(false);
     await queryClient.invalidateQueries({ queryKey: ["transactions"] });
     await queryClient.invalidateQueries({ queryKey: ["accounts"] });
+    toast.success(strings.updatedTransaction);
     navigate(`/transactions/${id}`, { replace: true });
   }
 

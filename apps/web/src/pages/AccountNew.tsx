@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import {
   AccountForm,
   type AccountFormValues,
@@ -40,6 +41,7 @@ export default function AccountNew() {
     }
     setPending(false);
     await queryClient.invalidateQueries({ queryKey: ["accounts"] });
+    toast.success(strings.savedAccount);
     navigate("/wallet", { replace: true });
   }
 
