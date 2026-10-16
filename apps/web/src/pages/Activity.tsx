@@ -5,7 +5,8 @@ import { id as localeId } from "react-day-picker/locale";
 import { labelDayButton } from "react-day-picker";
 import { KindBadge, SignedAmount } from "@/components/SignedAmount";
 import { ReceiptIcon } from "@/icons";
-import { Button } from "@/components/ui/button";
+import { useHideBalance } from "../lib/hideBalance";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "../components/PageHeader";
@@ -35,6 +36,7 @@ export default function Activity() {
   const dataSource = useDataSource();
   const [selected, setSelected] = useState(() => dayKeyJakarta(new Date()));
   const [month, setMonth] = useState(() => monthKeyOfDay(selected));
+  const [hidden] = useHideBalance();
 
   const day = useQuery({
     queryKey: ["transactions", "day", selected],
@@ -133,8 +135,10 @@ export default function Activity() {
         </CardContent>
       </Card>
 
-      <section aria-label={heading} aria-live="polite" className="mt-6">
-        <h2 className="px-1 text-sm font-semibold">{heading}</h2>
+      <section aria-label={heading} className="mt-6">
+        <div aria-live="polite">
+          <h2 className="px-1 text-sm font-semibold">{heading}</h2>
+        </div>
 
         {day.isPending ? (
           <div
@@ -173,19 +177,31 @@ export default function Activity() {
               <p className="text-base font-semibold">
                 {strings.emptyDayTransactions}
               </p>
+              <Link
+                to="/record"
+                className={buttonVariants({ className: "mt-4 min-h-[44px]" })}
+              >
+                {strings.emptyTransactionsAction}
+              </Link>
             </CardContent>
           </Card>
         ) : (
           <>
-            <Card className="mt-3" aria-label={strings.activityNet}>
+            <Card className="mt-3" aria-label={strings.activityNet} aria-live="polite">
               <CardContent>
                 <p className="text-sm text-muted-foreground">
                   {strings.activityNet}
                 </p>
                 <p className="mt-1 text-2xl font-bold tabular-nums">
                   {/* why: net selalu bertanda agar tak mengandalkan warna. */}
-                  {totals.net < 0 ? "-" : "+"}
-                  {formatRupiah(Math.abs(totals.net))}
+                  {hidden ? (
+                    strings.balanceHidden
+                  ) : (
+                    <>
+                      {totals.net < 0 ? "-" : "+"}
+                      {formatRupiah(Math.abs(totals.net))}
+                    </>
+                  )}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm tabular-nums">
                   <p>
@@ -193,7 +209,7 @@ export default function Activity() {
                       {strings.monthIncome}:{" "}
                     </span>
                     <span className="font-semibold text-emerald-700 dark:text-emerald-400">
-                      +{formatRupiah(totals.income)}
+                      {hidden ? strings.balanceHidden : `+${formatRupiah(totals.income)}`}
                     </span>
                   </p>
                   <p>
@@ -201,7 +217,7 @@ export default function Activity() {
                       {strings.monthExpense}:{" "}
                     </span>
                     <span className="font-semibold text-destructive">
-                      -{formatRupiah(totals.expense)}
+                      {hidden ? strings.balanceHidden : `-${formatRupiah(totals.expense)}`}
                     </span>
                   </p>
                 </div>
@@ -237,6 +253,7 @@ export default function Activity() {
                       kind={row.kind}
                       amount={row.amount}
                       className="shrink-0 text-sm font-semibold"
+                      hidden={hidden}
                     />
                   </Link>
                 ))}

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { cn } from "cn";
 import { AmountField } from "@/components/AmountField";
 import {
@@ -115,6 +116,7 @@ export default function Transfer() {
     setPending(false);
     await queryClient.invalidateQueries({ queryKey: ["accounts"] });
     await queryClient.invalidateQueries({ queryKey: ["transfers"] });
+    toast.success(strings.savedTransfer);
     navigate("/wallet", { replace: true });
   }
 

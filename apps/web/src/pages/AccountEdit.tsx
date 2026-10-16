@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
 import { cn } from "cn";
 import { AccountForm, type AccountFormValues } from "@/components/AccountForm";
 import {
@@ -15,9 +16,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { errorStatus, isUnauthorized } from "../lib/datasource";
 import { useDataSource } from "../lib/datasourceContext";
+import { useHiddenAccounts } from "../lib/hideBalance";
 import { formatRupiah } from "../lib/format";
 import { useHideBalance } from "../lib/hideBalance";
 import { type AccountType } from "../lib/datasource";
@@ -33,6 +37,8 @@ export default function AccountEdit() {
   const dataSource = useDataSource();
   const queryClient = useQueryClient();
   const [hidden] = useHideBalance();
+  const { isHidden: isAccountHidden, toggle: toggleAccountHidden } =
+    useHiddenAccounts();
   const [pending, setPending] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -103,6 +109,7 @@ export default function AccountEdit() {
     }
     setPending(false);
     await queryClient.invalidateQueries({ queryKey: ["accounts"] });
+    toast.success(strings.updatedAccount);
     navigate("/wallet", { replace: true });
   }
 
@@ -129,6 +136,7 @@ export default function AccountEdit() {
     }
     setDeleting(false);
     await queryClient.invalidateQueries({ queryKey: ["accounts"] });
+    toast.success(strings.deletedAccount);
     navigate("/wallet", { replace: true });
   }
 
@@ -151,6 +159,23 @@ export default function AccountEdit() {
       <h1 className="mt-2 font-display text-xl font-bold">
         {strings.editAccountTitle}
       </h1>
+
+      <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-border px-4 py-3">
+        <span className="min-w-0">
+          <Label htmlFor="hide-this-account" className="text-sm font-medium">
+            {strings.hideThisAccount}
+          </Label>
+          <span className="mt-0.5 block text-xs text-muted-foreground">
+            {strings.hideThisAccountHint}
+          </span>
+        </span>
+        <Switch
+          id="hide-this-account"
+          checked={isAccountHidden(id)}
+          onCheckedChange={() => toggleAccountHidden(id)}
+          aria-label={strings.hideThisAccount}
+        />
+      </div>
 
       {account.isPending ? (
         <div

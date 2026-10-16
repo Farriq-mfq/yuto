@@ -2,6 +2,8 @@ import {
   ChartBarIcon,
   ChevronRightIcon,
   DeviceDesktopIcon,
+  EyeIcon,
+  EyeOffIcon,
   MinusIcon,
   MoonIcon,
   ReceiptIcon,
@@ -14,7 +16,8 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate } from "react-router-dom";
 import { KindBadge, SignedAmount } from "@/components/SignedAmount";
-import { Button } from "@/components/ui/button";
+import { useHideBalance } from "../lib/hideBalance";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
@@ -90,6 +93,11 @@ export default function Home() {
   const [filter, setFilter] = useState<Filter>("all");
   // Potret "sekarang" sekali per mount agar jendela 7 hari stabil.
   const [nowMs] = useState(() => Date.now());
+  // why: preferensi sembunyi-saldo yang sama dengan Dompet (satu sumber
+  // di localStorage) agar nominal tak memamerkan diri di layar mana pun.
+  const [hidden, toggleHidden] = useHideBalance();
+  const masked = (amount: number): string =>
+    hidden ? strings.balanceHidden : formatRupiah(amount);
   const currentMonth = currentMonthJakarta(new Date(nowMs));
   const lastMonth = previousMonth(currentMonth);
   const { preference, setPreference } = useTheme();
@@ -272,6 +280,22 @@ export default function Home() {
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={toggleHidden}
+            aria-label={hidden ? strings.showBalance : strings.hideBalance}
+            title={hidden ? strings.showBalance : strings.hideBalance}
+            aria-pressed={hidden}
+            className="size-11 shrink-0"
+          >
+            {hidden ? (
+              <EyeOffIcon size={20} aria-hidden="true" />
+            ) : (
+              <EyeIcon size={20} aria-hidden="true" />
+            )}
+          </Button>
         </div>
       </PageHeader>
 
@@ -302,6 +326,29 @@ export default function Home() {
         </Card>
       ) : (
         <>
+          {/* Hero = Net bulan ini (selaras dengan month picker di header).
+              Total saldo (all-time, tak berubah saat ganti bulan) jadi
+              sekunder agar bobot visual sesuai cakupan. Label tetap beda
+              (PRD acceptance 5). */}
+          <Card className="mt-5" aria-label={strings.netThisMonth}>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                {strings.netThisMonth}
+              </p>
+              <p className="mt-1 text-3xl font-bold tabular-nums">
+                {/* why: net selalu bertanda agar tak mengandalkan warna. */}
+                {hidden ? (
+                  strings.balanceHidden
+                ) : (
+                  <>
+                    {totals.net < 0 ? "-" : "+"}
+                    {formatRupiah(Math.abs(totals.net))}
+                  </>
+                )}
+              </p>
+            </CardContent>
+          </Card>
+
           {/* Label "Total saldo semua akun" sengaja berbeda dari "Total saldo"
               di Wallet dan "Net bulan ini" (PRD acceptance 5). */}
           <Card className="mt-5" aria-label={strings.homeTotalBalance}>
@@ -309,10 +356,14 @@ export default function Home() {
               <p className="text-sm text-muted-foreground">
                 {strings.homeTotalBalance}
               </p>
-              <p className="mt-1 text-3xl font-bold tabular-nums">
-                {formatRupiah(accounts.data?.totalBalance ?? 0)}
+              <p className="mt-1 text-xl font-bold tabular-nums">
+                {masked(accounts.data?.totalBalance ?? 0)}
               </p>
-              {deltaReady ? (
+              {hidden ? (
+                <p className="mt-2 text-sm tabular-nums text-muted-foreground">
+                  {strings.balanceHidden}
+                </p>
+              ) : deltaReady ? (
                 delta === 0 ? (
                   <p className="mt-2 flex items-center gap-1.5 text-sm tabular-nums text-muted-foreground">
                     <MinusIcon size={16} aria-hidden="true" />
@@ -333,19 +384,6 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          <Card className="mt-5" aria-label={strings.netThisMonth}>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                {strings.netThisMonth}
-              </p>
-              <p className="mt-1 text-3xl font-bold tabular-nums">
-                {/* why: net selalu bertanda agar tak mengandalkan warna. */}
-                {totals.net < 0 ? "-" : "+"}
-                {formatRupiah(Math.abs(totals.net))}
-              </p>
-            </CardContent>
-          </Card>
-
           <div className="mt-5 grid grid-cols-2 gap-3">
             <Card aria-label={strings.homeIncomeTitle}>
               <CardContent>
@@ -353,7 +391,7 @@ export default function Home() {
                   {strings.homeIncomeTitle}
                 </p>
                 <p className="mt-1 text-xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
-                  +{formatRupiah(totals.income)}
+                  +{masked(totals.income)}
                 </p>
               </CardContent>
             </Card>
@@ -363,7 +401,7 @@ export default function Home() {
                   {strings.homeExpenseTitle}
                 </p>
                 <p className="mt-1 text-xl font-bold tabular-nums text-destructive">
-                  -{formatRupiah(totals.expense)}
+                  -{masked(totals.expense)}
                 </p>
               </CardContent>
             </Card>
@@ -433,6 +471,12 @@ export default function Home() {
                 <p className="mt-1 text-sm text-muted-foreground">
                   {strings.emptyTransactionsHint}
                 </p>
+                <Link
+                  to="/record"
+                  className={buttonVariants({ className: "mt-4 min-h-[44px]" })}
+                >
+                  {strings.emptyTransactionsAction}
+                </Link>
               </CardContent>
             </Card>
           ) : (
@@ -442,8 +486,14 @@ export default function Home() {
                   <div className="flex items-baseline justify-between gap-2 px-1">
                     <h2 className="text-sm font-semibold">{group.label}</h2>
                     <p className="text-sm font-semibold tabular-nums text-muted-foreground">
-                      {group.net < 0 ? "-" : "+"}
-                      {formatRupiah(Math.abs(group.net))}
+                      {hidden ? (
+                        strings.balanceHidden
+                      ) : (
+                        <>
+                          {group.net < 0 ? "-" : "+"}
+                          {formatRupiah(Math.abs(group.net))}
+                        </>
+                      )}
                     </p>
                   </div>
                   <Card className="mt-2">
@@ -475,6 +525,7 @@ export default function Home() {
                             kind={row.kind}
                             amount={row.amount}
                             className="shrink-0 text-sm font-semibold"
+                            hidden={hidden}
                           />
                         </Link>
                       ))}

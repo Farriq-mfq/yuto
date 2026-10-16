@@ -12,11 +12,20 @@ export function SignedAmount({
   kind,
   amount,
   className,
+  hidden = false,
 }: {
   kind: TxKind;
   amount: number;
   className?: string;
+  hidden?: boolean;
 }) {
+  if (hidden) {
+    return (
+      <span className={cn("tabular-nums text-muted-foreground", className)}>
+        {strings.balanceHidden}
+      </span>
+    );
+  }
   return (
     <span
       className={cn(

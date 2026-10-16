@@ -14,6 +14,15 @@ laporan per kategori (donat + bar + persen + change vs bulan lalu); PWA
 (offline + install di HP); aplikasi Android mandiri (SQLite terenkripsi,
 kunci biometrik).
 
+## Tampilan
+
+| Beranda | Dompet | Catat |
+|---|---|---|
+| ![Beranda: ringkasan bulan dan daftar transaksi](screenshots/02-home.png) | ![Dompet: total saldo dan kartu akun](screenshots/demo-dompet.png) | ![Catat transaksi: formulir](screenshots/06-record.png) |
+| Aktivitas | Laporan | Masuk |
+|---|---|---|
+| ![Aktivitas: kalender transaksi](screenshots/demo-aktivitas.png) | ![Laporan: donat dan bar per kategori](screenshots/demo-laporan.png) | ![Masuk: login password pemilik](screenshots/01-login.png) |
+
 ## Instalasi
 
 ```bash
