@@ -23,13 +23,24 @@ export interface PushPayload {
 }
 
 export interface SyncTransport {
-  pair(baseUrl: string, password: string, deviceName: string): Promise<PairResult>;
-  push(baseUrl: string, token: string, body: PushPayload): Promise<PushResult>;
+  pair(
+    baseUrl: string,
+    password: string,
+    deviceName: string,
+    signal?: AbortSignal,
+  ): Promise<PairResult>;
+  push(
+    baseUrl: string,
+    token: string,
+    body: PushPayload,
+    signal?: AbortSignal,
+  ): Promise<PushResult>;
   pull(
     baseUrl: string,
     token: string,
     since: number,
     limit: number,
+    signal?: AbortSignal,
   ): Promise<PullResult>;
 }
 
@@ -65,7 +76,19 @@ function readServerMessage(error: unknown): { message: string; code: string } | 
   };
 }
 
+/** Timeout/abort dari fetch (treaty me-resolve `{ status: 503, error: TimeoutError }`, bukan melempar). */
+function isTimeout(error: unknown): boolean {
+  const text = String(error);
+  return (
+    text.includes("TimeoutError") ||
+    text.includes("aborted") ||
+    text.includes("AbortError") ||
+    text.includes("operation timed out")
+  );
+}
+
 function toSyncError(error: unknown, status: number): SyncError {
+  if (isTimeout(error)) return new SyncError(strings.syncServerUnreachable);
   const server = readServerMessage(error);
   if (server) return new SyncError(server.message, status, server.code);
   if (status === 401) return new SyncError(strings.syncUnauthorized, status);
@@ -75,20 +98,52 @@ function toSyncError(error: unknown, status: number): SyncError {
 
 /** Transport HTTP via Eden Treaty (typed, tanpa tipe fetch tulisan tangan). */
 export class HttpSyncTransport implements SyncTransport {
+  /**
+   * Batas tiap request (ms). Tanpa ini, server yang diam (IP tak terjangkau,
+   * firewall drop, HP beda jaringan) membuat fetch menggantung bermenit-
+   * menit sementara layar terkunci `busy` (semua tombol disabled) → UI
+   * terlihat "stuck, tidak bisa digerakkan". Abort memaksa gagal cepat
+   * menjadi SyncError(server unreachable).
+   */
+  constructor(private readonly timeoutMs: number = 20_000) {}
+
+  private signal(external?: AbortSignal): AbortSignal {
+    const timeout = AbortSignal.timeout(this.timeoutMs);
+    if (!external) return timeout;
+    // why: gabungan timeout internal + batal manual dari UI — mana yang
+    // lebih dulu menembak, request gagal. AbortSignal.any tersedia di
+    // WebView modern + bun/node 20+.
+    return AbortSignal.any([timeout, external]);
+  }
+
+  /** Dibatalkan user via tombol Batal (bukan timeout/server mati). */
+  private static throwIfCancelled(external?: AbortSignal): void {
+    if (external?.aborted) {
+      throw new SyncError(strings.syncCancelled);
+    }
+  }
   async pair(
     baseUrl: string,
     password: string,
     deviceName: string,
+    signal?: AbortSignal,
   ): Promise<PairResult> {
     let res;
     try {
-      res = await treaty<App>(baseUrl).api.sync.pair.post({
-        password,
-        deviceName,
-      });
+      res = await treaty<App>(baseUrl).api.sync.pair.post(
+        {
+          password,
+          deviceName,
+        },
+        { fetch: { signal: this.signal(signal) } },
+      );
     } catch {
+      HttpSyncTransport.throwIfCancelled(signal);
       throw new SyncError(strings.syncServerUnreachable);
     }
+    // why: treaty me-resolve (bukan melempar) saat abort/timeout — bila
+    // user yang membatalkan, hasilnya tak bermakna; dahulukan pesan Batal.
+    HttpSyncTransport.throwIfCancelled(signal);
     if (res.error) throw toSyncError(res.error, res.status);
     const data = res.data as { token?: unknown; deviceId?: unknown } | null;
     if (
@@ -105,6 +160,7 @@ export class HttpSyncTransport implements SyncTransport {
     baseUrl: string,
     token: string,
     body: PushPayload,
+    signal?: AbortSignal,
   ): Promise<PushResult> {
     let res;
     try {
@@ -115,10 +171,13 @@ export class HttpSyncTransport implements SyncTransport {
       // 400).
       res = await treaty<App>(baseUrl).api.sync.push.post(body as unknown as never, {
         headers: { authorization: `Bearer ${token}` },
+        fetch: { signal: this.signal(signal) },
       });
     } catch {
+      HttpSyncTransport.throwIfCancelled(signal);
       throw new SyncError(strings.syncServerUnreachable);
     }
+    HttpSyncTransport.throwIfCancelled(signal);
     if (res.error) throw toSyncError(res.error, res.status);
     // why: runtime JSON bisa menyimpang dari tipe Eden (Date→string dsb);
     // engine yang menormalisasi — di sini cukup pastikan bentuk kasarnya ada.
@@ -139,16 +198,20 @@ export class HttpSyncTransport implements SyncTransport {
     token: string,
     since: number,
     limit: number,
+    signal?: AbortSignal,
   ): Promise<PullResult> {
     let res;
     try {
       res = await treaty<App>(baseUrl).api.sync.pull.get({
         query: { since: String(since), limit: String(limit) },
         headers: { authorization: `Bearer ${token}` },
+        fetch: { signal: this.signal(signal) },
       });
     } catch {
+      HttpSyncTransport.throwIfCancelled(signal);
       throw new SyncError(strings.syncServerUnreachable);
     }
+    HttpSyncTransport.throwIfCancelled(signal);
     if (res.error) throw toSyncError(res.error, res.status);
     const data = res.data as Partial<PullResult> | null;
     if (

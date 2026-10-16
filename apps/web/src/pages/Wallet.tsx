@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate } from "react-router-dom";
 import { cn } from "cn";
-import { Logo } from "idn-finlogos/react";
 import {
   BanknoteIcon,
   EyeIcon,
@@ -16,6 +15,7 @@ import { brandFor, fallbackIconName } from "@/brands";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "../components/PageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isUnauthorized } from "../lib/datasource";
 import { useDataSource } from "../lib/datasourceContext";
@@ -65,7 +65,7 @@ export default function Wallet() {
       tabIndex={-1}
       className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5"
     >
-      <div className="flex items-center justify-between gap-3">
+      <PageHeader className="flex items-center justify-between gap-3">
         <h1 className="font-display text-xl font-bold">{strings.walletTitle}</h1>
         <div className="flex shrink-0 items-center gap-2">
           <Link
@@ -93,7 +93,7 @@ export default function Wallet() {
             )}
           </Button>
         </div>
-      </div>
+      </PageHeader>
 
       {summary.isPending ? (
         <div
@@ -219,16 +219,20 @@ export default function Wallet() {
                           {brand ? (
                             brand.kind === "logo" ? (
                               <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white">
-                                <Logo
-                                  svg={brand.svg}
-                                  size={28}
-                                  title={brand.label}
-                                  // why: idn-finlogos me-render span
-                                  // inline-block berisi <svg> tanpa
-                                  // width/height (hanya viewBox) sehingga
-                                  // svg melebar melewati wrapper 28px;
-                                  // paksa svg pas 28px + meet (aspect
-                                  // terjaga, terpusat) di tengah tile 44px.
+                                <span
+                                  role="img"
+                                  aria-label={brand.label}
+                                  // why: pengganti komponen `Logo` dari
+                                  // "idn-finlogos/react" — barrel paket itu
+                                  // menarik SELURUH pustaka ikon (~8 MB) ke
+                                  // bundle dan berulang membunuh renderer
+                                  // WebView di perangkat RAM kecil. String
+                                  // SVG per brand sudah diimpor selektif di
+                                  // src/brands, jadi render langsung di sini
+                                  // (svg paket hanya viewBox; paksa 28px +
+                                  // meet agar pas di tengah tile 44px,
+                                  // aspect terjaga).
+                                  dangerouslySetInnerHTML={{ __html: brand.svg }}
                                   className="flex items-center justify-center [&_svg]:block [&_svg]:h-7 [&_svg]:w-7"
                                 />
                               </span>

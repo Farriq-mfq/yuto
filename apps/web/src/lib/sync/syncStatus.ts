@@ -1,6 +1,11 @@
 import { useSyncExternalStore } from "react";
-import { SYNC_DEBOUNCE_MS } from "./syncEngine";
 import type { KeyValue } from "./tokenStore";
+
+// why: konstanta ini tinggal di sini (bukan di syncEngine) agar
+// syncStatus tidak menarik seluruh engine (+ Eden treaty) ke chunk utama —
+// gate mengimpor syncEngine secara DINAMIS dan build memperingatkan
+// INEFFECTIVE_DYNAMIC_IMPORT bila rantai statis ikut menyeretnya.
+export const SYNC_DEBOUNCE_MS = 3000;
 
 // Status sync terakhir + penjadwal sync otomatis (Phase 11 part 3).
 // lastSyncAt/lastError persisten di KV (localStorage di web); UI membaca
@@ -63,8 +68,21 @@ export function createSyncStatus(deps?: StatusDeps) {
   }
   const listeners = new Set<Listener>();
 
+  // why: snapshot WAJIB stabil (referensi sama selama nilainya sama) —
+  // useSyncExternalStore membandingkan dengan Object.is; objek baru di
+  // tiap getSnapshot memicu re-render tanpa henti (React error #185,
+  // halaman Sync blank di native).
+  let cached: SyncStatusSnapshot = { syncing, lastSyncAt, lastError };
+
   function snapshot(): SyncStatusSnapshot {
-    return { syncing, lastSyncAt, lastError };
+    if (
+      cached.syncing !== syncing ||
+      cached.lastSyncAt !== lastSyncAt ||
+      cached.lastError !== lastError
+    ) {
+      cached = { syncing, lastSyncAt, lastError };
+    }
+    return cached;
   }
 
   function emit(): void {
@@ -161,5 +179,24 @@ export function cancelScheduledSync(): void {
   if (timer !== null) {
     clearTimeout(timer);
     timer = null;
+  }
+}
+
+export async function runSyncGuarded<T>(
+  run: () => Promise<T>,
+): Promise<T | null> {
+  if (syncStatus.getSnapshot().syncing) return null;
+  syncStatus.setSyncing(true);
+  try {
+    const result = await run();
+    syncStatus.recordSuccess();
+    return result;
+  } catch (error) {
+    syncStatus.recordError(
+      error instanceof Error ? error.message : "Sinkronisasi gagal",
+    );
+    return null;
+  } finally {
+    syncStatus.setSyncing(false);
   }
 }

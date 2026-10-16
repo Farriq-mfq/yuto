@@ -1,4 +1,5 @@
 import { Elysia } from "elysia";
+import { cors } from "@elysiajs/cors";
 import { getEnv, type Env } from "./lib/env";
 import { errorResponse } from "./lib/errors";
 import { authRoutes } from "./modules/auth/routes";
@@ -30,6 +31,19 @@ function isSyncBearerPath(path: string): boolean {
 
 export function createApp(env: Env = getEnv()) {
   return new Elysia()
+    // why: aplikasi native (origin https://localhost di WebView Android,
+    // capacitor://localhost di iOS) menembak API langsung lintas-origin
+    // (pair/push/pull pakai Bearer, bukan cookie) — tanpa ini preflight
+    // OPTIONS gagal dan HP hanya bisa sync via proxy dev. Didaftarkan
+    // PERTAMA agar preflight lolos sebelum guard sesi. Origin eksplisit
+    // (bukan *) agar respons kredensial tak bocor ke situs asing.
+    .use(
+      cors({
+        origin: ["https://localhost", "capacitor://localhost"],
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+      }),
+    )
     .onBeforeHandle(async ({ path, cookie, set }) => {
       if (PUBLIC_PATHS.includes(path) || isSyncBearerPath(path)) return;
       const token = cookie[SESSION_COOKIE]?.value;

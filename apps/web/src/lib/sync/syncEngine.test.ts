@@ -8,6 +8,7 @@ import {
   pairAndDetect,
   pullServerChanges,
   pushLocalChanges,
+  pushOnly,
   syncNow,
   type SyncConnection,
 } from "./syncEngine";
@@ -591,8 +592,34 @@ describe("syncNow", () => {
   });
 });
 
-describe("pairing", () => {
-  test("pair menyimpan token + mendeteksi kedua sisi punya data", async () => {
+describe("pushOnly (tombol Kirim manual)", () => {
+  test("mendorong baris dirty TANPA memanggil pull", async () => {
+    const ds = await createLocalDataSource(":memory:");
+    await makeAccount(ds);
+    const transport = new FakeTransport({ onPush: appliedAll });
+    const tokens = fakeTokens();
+
+    const outcome = await pushOnly({ ds, transport, tokens });
+
+    expect(transport.calls).toEqual(["push"]);
+    expect(outcome.applied.accounts).toBe(1);
+    expect(await ds.getDirtyAccounts()).toHaveLength(0);
+  });
+
+  test("tanpa token melempar NOT_PAIRED tanpa request", async () => {
+    const ds = await createLocalDataSource(":memory:");
+    const transport = new FakeTransport();
+    const tokens = fakeTokens({ token: null, serverUrl: null });
+
+    await expect(pushOnly({ ds, transport, tokens })).rejects.toMatchObject({
+      name: "SyncError",
+      code: "NOT_PAIRED",
+    });
+    expect(transport.calls).toEqual([]);
+  });
+});
+
+describe("pairing", () => {  test("pair menyimpan token + mendeteksi kedua sisi punya data", async () => {
     const ds = await createLocalDataSource(":memory:");
     await makeAccount(ds);
     const transport = new FakeTransport({

@@ -54,3 +54,36 @@ describe("scheduleSyncAfterWrite", () => {
     }
   });
 });
+
+describe("snapshot stabil (regresi React #185)", () => {
+  test("getSnapshot berulang tanpa perubahan mengembalikan referensi sama", async () => {
+    const { createSyncStatus } = await import("./syncStatus");
+    const store = createSyncStatus({
+      kv: {
+        getItem: () => null,
+        setItem: () => {},
+        removeItem: () => {},
+      },
+    });
+    expect(store.getSnapshot()).toBe(store.getSnapshot());
+    store.setSyncing(true);
+    const during = store.getSnapshot();
+    expect(during).toBe(store.getSnapshot());
+    expect(during.syncing).toBe(true);
+    store.setSyncing(false);
+    expect(store.getSnapshot()).not.toBe(during);
+  });
+});
+
+describe("manual-only (regresi auto-sync)", () => {
+  test("tanpa runner terdaftar, penjadwalan pasca-tulis adalah no-op", async () => {
+    const { scheduleSyncAfterWrite, initSyncRunner } = await import("./syncStatus");
+    initSyncRunner(null);
+    scheduleSyncAfterWrite(5);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    // why: di main, gate native TIDAK memasang AutoSyncDataSource maupun
+    // initSyncRunner — sync hanya jalan via tombol (manual, untuk testing).
+    // Bila scheduler menembak tanpa runner, anggap gagal.
+    initSyncRunner(null);
+  });
+});

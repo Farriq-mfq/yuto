@@ -26,6 +26,13 @@ import Transfer from "./pages/Transfer";
 import Wallet from "./pages/Wallet";
 import Sync from "./pages/Sync";
 
+// why: pratinjau DEV-ONLY untuk UI native pairing (lihat pages/DebugSync).
+// Lazy + gate DEV agar chunk mock tak pernah masuk bundle production;
+// di native tak ada route ini (di luar <Shell> pun tak ditautkan).
+const DebugSync = import.meta.env.DEV
+  ? lazy(() => import("./pages/DebugSync"))
+  : null;
+
 const queryClient = new QueryClient();
 
 // Tema: "system" (default, ikut OS) | "light" | "dark", tersimpan di
@@ -93,6 +100,16 @@ function RoutedApp() {
           <Route path="/activity" element={<Activity />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/sync" element={<Sync />} />
+          {DebugSync ? (
+            <Route
+              path="/debug-sync"
+              element={
+                <Suspense fallback={null}>
+                  <DebugSync />
+                </Suspense>
+              }
+            />
+          ) : null}
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

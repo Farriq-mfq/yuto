@@ -8,6 +8,7 @@ import { ReceiptIcon } from "@/icons";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "../components/PageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isUnauthorized } from "../lib/datasource";
 import { useDataSource } from "../lib/datasourceContext";
@@ -92,7 +93,9 @@ export default function Activity() {
       tabIndex={-1}
       className="mx-auto w-full max-w-[480px] bg-background px-4 pb-24 pt-6 sm:px-5"
     >
-      <h1 className="font-display text-xl font-bold">{strings.activityTitle}</h1>
+      <PageHeader>
+        <h1 className="font-display text-xl font-bold">{strings.activityTitle}</h1>
+      </PageHeader>
 
       <Card className="mt-5">
         {/* why: kalender full-width (w-full menimpa w-fit bawaan);

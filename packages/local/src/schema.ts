@@ -8,13 +8,15 @@ import {
   check,
 } from "drizzle-orm/sqlite-core";
 
+import { newUuid } from "./uuid";
+
 // Local (SQLite) mirror of apps/api/src/db/schema.ts (PostgreSQL).
 // Dialect notes: money is INTEGER (whole rupiah); timestamptz becomes
 // INTEGER ms epoch (see time.ts); pg enums become TEXT + CHECK.
 // Sync-ready extras on every table: updated_at, deleted_at, dirty,
 // plus categories.slug (stable cross-device identity). See
 // docs/BACKGROUND_SCHEMA.md "Local sync fields".
-const pk = () => text("id").primaryKey().$defaultFn(() => crypto.randomUUID());
+const pk = () => text("id").primaryKey().$defaultFn(() => newUuid());
 const epochMs = (name: string) =>
   integer(name)
     .notNull()

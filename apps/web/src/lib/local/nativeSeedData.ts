@@ -9,6 +9,7 @@
 // bun (mis. "./seed-data"), lalu hapus file ini.
 
 import { categories } from "@yuto/local/schema";
+import { newUuid } from "@yuto/local/uuid";
 import type { SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy";
 import type * as localSchema from "@yuto/local/schema";
 
@@ -58,7 +59,7 @@ export async function seedDefaultCategories(db: NativeSeedDb): Promise<void> {
     for (const category of NATIVE_SEED_CATEGORIES) {
       await tx
         .insert(categories)
-        .values({ id: crypto.randomUUID(), ...category })
+        .values({ id: newUuid(), ...category })
         .onConflictDoNothing({ target: categories.slug });
     }
   });
