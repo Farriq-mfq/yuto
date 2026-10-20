@@ -70,9 +70,10 @@ Errors: `{ "error": { "code": "VALIDATION" | "NOT_FOUND" | "CONFLICT" | "UNAUTHO
 The API refuses to start if `JWT_SECRET` is missing or shorter than 32 chars, if `YUTO_PASSWORD` is missing or shorter than 12 chars, or if either still has the example value.
 
 ## 7. Docker and self-hosting
-- `db`: postgres:16-alpine, named volume `pgdata`, healthcheck, port not published by default (only the stack needs it).
-- `api`: waits for healthy `db`, runs migrations, then starts.
-- `web`: Vite build served by nginx, `/api` proxied to `api:3000`. Only `web` is exposed (default host port 8080).
+- `db`: postgres:16-alpine, named volume `pgdata`, healthcheck, port not published by default (only the stack needs it), `stop_grace_period: 30s` so a host shutdown lets Postgres close cleanly.
+- `api`: waits for healthy `db`, runs migrations + seed, then `exec bun src/index.ts` (Bun becomes PID 1, so `docker stop` reaches it instead of waiting for SIGKILL). Healthcheck runs `src/healthcheck.ts` (fetch to `/api/health`; the runtime image has no curl) with a 60 s start period for first-time migrations.
+- `web`: Vite build served by nginx, `/api` proxied to `api:3000`. Only `web` is exposed (default host port 8080). Waits for a healthy `api` so startup shows no 502.
+- Survivability: every service is `restart: unless-stopped`, so a crashed container or a host reboot brings the stack back once the Docker daemon is running. Explicit `docker compose stop`/`down` is respected. Docker itself must start at boot: `systemctl enable docker` on Linux, "Start Docker Desktop when you sign in" on Windows/macOS.
 
 **Install:** copy `.env.example` to `.env`, set `POSTGRES_PASSWORD`, `JWT_SECRET`, and `YUTO_PASSWORD`, run `docker compose up -d`, open the web port, log in with `YUTO_PASSWORD`.
 

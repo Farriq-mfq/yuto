@@ -47,6 +47,16 @@ jobs:
           curl -fsS -X POST http://localhost:8080/api/auth/login \
             -H 'content-type: application/json' \
             -d '{"password":"ci-only-password-123"}'
+      - name: Containers restart themselves after a crash
+        run: |
+          for id in $(docker compose ps -q); do
+            name=$(docker inspect --format '{{.Name}}' "$id")
+            policy=$(docker inspect --format '{{.HostConfig.RestartPolicy.Name}}' "$id")
+            test "$policy" = "unless-stopped" || {
+              echo "$name memakai restart=$policy, seharusnya unless-stopped"
+              exit 1
+            }
+          done
       - name: Logs on failure
         if: failure()
         run: docker compose logs --tail=100
