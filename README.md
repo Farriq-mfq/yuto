@@ -110,6 +110,29 @@ docker compose up -d --build
 
 Migrasi database berjalan otomatis saat start dan hanya bergerak maju.
 
+## Kalau server mati atau restart
+
+Ketiga kontainer memakai `restart: unless-stopped`, jadi kalau `api` crash,
+`web`/`db` keluar, atau mesin reboot, Docker menyalakannya lagi sendiri.
+Yang perlu dipastikan hanya daemon Docker ikut hidup saat mesin menyala:
+
+- **Linux:** `sudo systemctl enable --now docker`
+- **Windows/macOS (Docker Desktop):** aktifkan "Start Docker Desktop when you
+  sign in", lalu tunggu ikonnya hijau setelah login.
+
+Perintah `docker compose stop` / `down` tetap dihormati: kontainer tidak
+dinyalakan ulang sampai Anda menjalankan `docker compose up -d` lagi.
+
+Status kesehatan tiap layanan bisa dicek kapan saja:
+
+```bash
+docker compose ps          # STATUS: healthy / unhealthy / restarting
+docker compose logs --tail=50 api
+```
+
+`api` baru dianggap sehat setelah migrasi selesai dan `/api/health` menjawab
+200; `web` menunggu itu, jadi tidak ada 502 saat baru start.
+
 ## Aplikasi Android
 
 APK rilis (`app.yuto`, `com.farriq.yuto`) dilampirkan di setiap GitHub
