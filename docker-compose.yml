@@ -1,6 +1,11 @@
 services:
   db:
     image: postgres:16-alpine
+    # Hidupkan lagi otomatis setelah crash atau reboot host. `unless-stopped`
+    # berarti `docker compose stop db` tetap dihormati (tidak dilawan).
+    restart: unless-stopped
+    # Postgres butuh waktu menutup bersih; jangan SIGKILL saat host shutdown.
+    stop_grace_period: 30s
     volumes:
       - pgdata:/var/lib/postgresql/data
     env_file:
@@ -28,15 +33,28 @@ services:
       # Default build target is the last stage (development with
       # --watch). Production must use the lean runtime stage.
       target: production
+    # Crash loop tetap dicoba ulang (backoff bawaan Docker), bukan mati diam.
+    restart: unless-stopped
+    stop_grace_period: 20s
     depends_on:
       db:
         condition: service_healthy
     env_file:
       - .env
+    # `exec` mengganti sh dengan bun supaya SIGTERM dari `docker stop` /
+    # shutdown host langsung sampai ke API, bukan menunggu SIGKILL.
     command: >
       sh -c "bunx drizzle-kit migrate
       && bun src/db/seed.ts
-      && bun src/index.ts"
+      && exec bun src/index.ts"
+    healthcheck:
+      # Bun dipakai sebagai HTTP client: image runtime tidak punya curl.
+      test: ["CMD", "bun", "src/healthcheck.ts"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      # Migrasi + seed pada instalasi baru bisa lama; jangan dihitung gagal.
+      start_period: 60s
 
   web:
     build:
@@ -45,10 +63,19 @@ services:
       # Default build target is the last stage (development = vite dev
       # on :5173). Production must serve the nginx stage on :80.
       target: production
+    restart: unless-stopped
     depends_on:
-      - api
+      api:
+        # Tunggu API benar-benar siap agar tidak ada 502 saat start.
+        condition: service_healthy
     ports:
       - "8080:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
   pgdata:
